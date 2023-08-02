@@ -3,6 +3,8 @@ module.exports = (app, handlers) => {
       instance.get('/calendar', handlers.getCalendar);
       instance.get('/calendars/', handlers.getCalendars);
       instance.get('/calendar/:id', handlers.getCalendarById);
+
+      instance.post('/calendar', handlers.submitCalendar);
       next();
   }, { prefix: '/api/v1' });
 

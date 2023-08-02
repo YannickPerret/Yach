@@ -1,8 +1,11 @@
 const Fastify = require('fastify');
 const view = require('@fastify/view');
+const multipart = require('@fastify/multipart');
 const ejs = require('ejs');
 const routes = require('./router.class');
 const path = require('path');
+const fs = require('fs')
+const pump = require('pump')
 
 class Webserver {
     constructor(config) {
@@ -28,6 +31,9 @@ class Webserver {
             engine: { ejs },
             root: path.join(__dirname, '../public')
         });
+
+        this.app.register(multipart)
+
     }
     
 
@@ -55,6 +61,16 @@ class Webserver {
 
     }
 
+   async submitCalendar(req, res) {
+        const data = await req.file()
+
+        const storedFile = fs.createWriteStream('./calendars/temps/' + data.filename)
+        await pump(data.file, storedFile)
+
+        return { message : 'ok'}
+
+    }
+
     // Static views home 
     getHome(req, res) {
         let calendars = Object.entries(this.fileConfig['Calendar Shared']).map(([name, path], index) => {
@@ -62,7 +78,7 @@ class Webserver {
           });
         
         res.view('index.ejs', {
-            title: 'Home',
+            title: 'Home Page',
             calendars: calendars
         });
     }
