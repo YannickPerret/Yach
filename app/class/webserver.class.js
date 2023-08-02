@@ -1,29 +1,44 @@
-const express = require('express');
-const bodyParser = require('body-parser');
+const Fastify = require('fastify');
+const view = require('@fastify/view');
+const ejs = require('ejs');
 const routes = require('./router.class');
+const path = require('path');
 
 class Webserver {
     constructor(config) {
-        this.app = express();
+        this.app = Fastify({ logger: true });
         this.port = config.port;
+        this.fileConfig = config.fileConfig;
+
+        this.getHome = this.getHome.bind(this);
+
 
         this.initMiddleware();
         this.initRoutes();
+        this.start();
     }
 
     initMiddleware() {
-        // ajouter les cors    
-        this.app.use(express.static('../public'));
-        this.app.use(bodyParser.json());
+        this.app.register(require('@fastify/static'), {
+            root: path.join(__dirname, '../public'),
+            prefix: '/',
+        });
+    
+        this.app.register(view, {
+            engine: { ejs },
+            root: path.join(__dirname, '../public')
+        });
     }
+    
 
     initRoutes() {
-        const apiRoutes = routes(this);
-        this.app.use('/api/v1', apiRoutes);
+        routes(this.app, this);
+    }
 
-        this.app.listen(this.port, () => {
+    start() {
+        this.app.listen({ port: this.port }, () => {
             console.log(`WEB SERVER : Server listening on port ${this.port}`);
-        });
+        });        
     }
 
     // Methodes
@@ -38,6 +53,18 @@ class Webserver {
 
     getCalendarById(req, res) {
 
+    }
+
+    // Static views home 
+    getHome(req, res) {
+        let calendars = Object.entries(this.fileConfig['Calendar Shared']).map(([name, path], index) => {
+            return { id: `cal${index}`, name: name, path: path };
+          });
+        
+        res.view('index.ejs', {
+            title: 'Home',
+            calendars: calendars
+        });
     }
 }
 

@@ -10,7 +10,6 @@ require('dotenv').config();
 
 /******** Initalize *******/
 
-let webSever = new Webserver({port: process.env.ENDPOINT_PORT});
 let configFile = new FileAdapter({fileName: 'config.yaml', encoding: 'utf8'});
 
 let config = yaml.load(configFile.load());
@@ -24,9 +23,11 @@ let fileCalendarPerso = new FileAdapter({fileName: config.source, encoding: 'utf
 let calendarEpsitec = new Calendar({source : fileCalendarEpsitec, format: fileCalendarEpsitec.getExtension()});
 calendarEpsitec.parseEvents();
 
-console.log(calendarEpsitec.generate())
-
+calendarEpsitec.generate()
 let calendarPerso = new Calendar({source : fileCalendarPerso, format: fileCalendarPerso.getExtension()});
+
+
+let webSever = new Webserver({port: process.env.ENDPOINT_PORT, fileConfig: config});
 
 
 /*

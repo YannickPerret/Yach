@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h2>Select Calendars</h2>
+
+<form action="/api/submit" method="post" enctype="multipart/form-data">
+  <label>Your calendar : </label><input type="file" name="file" id="file" /><br>
+
+  <% if (calendars.length === 0) { %>
+    <p>Don't have calendars available</p>
+  <% } else { %>
+    <% calendars.forEach(function(calendar) { %>
+      <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.path %>">
+      <label for="<%= calendar.id %>"><%= calendar.name %></label><br>
+    <% }); %>
+  <% } %>
+  <input type="submit" value="Submit">
+</form>
+
+</body>
+</html>

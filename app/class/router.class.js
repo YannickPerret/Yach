@@ -1,11 +1,10 @@
-const express = require('express');
+module.exports = (app, handlers) => {
+  app.register((instance, opts, next) => {
+      instance.get('/calendar', handlers.getCalendar);
+      instance.get('/calendars/', handlers.getCalendars);
+      instance.get('/calendar/:id', handlers.getCalendarById);
+      next();
+  }, { prefix: '/api/v1' });
 
-module.exports = (handlers) => {
-  const router = express.Router();
-
-  router.get('/calendar', handlers.getCalendar);
-  router.get('/calendars/', handlers.getCalendars);
-  router.get('/calendar/:id', handlers.getCalendarById);
-
-  return router;
+  app.get('/', handlers.getHome);
 };
