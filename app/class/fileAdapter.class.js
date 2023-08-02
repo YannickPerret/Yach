@@ -1,25 +1,23 @@
 const fs = require('fs');
 
-class FileManager {
+class FileAdapter {
     constructor(config) {
         this.fileName = config.fileName;
         this.format = config.format || 'UTF8';
-        this.instance = null;
-
-        //singleton patter for fileManager
-        if (FileManager.instance instanceof FileManager) {
-            return FileManager.instance;
-        }
-        FileManager.instance = this;
     }
 
-    openAndRead() {
+    load() {
         return fs.readFileSync(this.fileName, this.format)
     }
+
+    persiste() {
+
+    }
+
 
     getExtension() {
         return this.fileName.substring(this.fileName.lastIndexOf('.') + 1)
     }
 }
 
-module.exports = FileManager;
+module.exports = FileAdapter;

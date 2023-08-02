@@ -3,5 +3,5 @@
 name: 'Epsitec - Hub Calendrier (YACH)'
 source: '/Users/tchoune/Documents/epsitec/yach/calendars/source1.ics'
 Calendar Shared:
-   Epsitec: '/Users/tchoune/Documents/epsitec/yach/calendars/epsitec.ics'
-   Epsitec-event: '/Users/tchoune/Documents/epsitec/yach/calendars/epsitec-event.ics'
+   Epsitec: '/Users/tchoune/Documents/epsitec/yach/app/calendars/epsitec.ics'
+   Epsitec-event: '/Users/tchoune/Documents/epsitec/yach/app/calendars/epsitec-event.ics'

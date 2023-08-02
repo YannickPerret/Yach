@@ -1,22 +1,49 @@
-const fileManager = require('./fileManager.class');
+const Ical = require('./adapter/ical.class');
+const Event = require('./event.class');
+const ICAL = require('ical.js');
 
 class Calendar {
 
     constructor(config) {
         this.source = config.source;
         this.format = config.format;
-        this.outputCalendar = new ICAL.Component(['vcalendar', [], []]);
+        this.outputCalendar = Ical.component(['vcalendar', [], []]);
         this.events = [];
     }
 
-    parseEvents = (source) => {
-        console.log(`Processing ${source}`)
-        switch (source.substring(source.lastIndexOf('.') + 1)) {
+    parseEvents = () => {
+        if (this.source == null) throw new Error('No source file specified')
+
+        switch (this.source.fileName.substring(this.source.fileName.lastIndexOf('.') + 1)) {
             case 'ics':
-                //this.#formatEvent(source);
+                let jcalData = Ical.parse(this.source.load());
+                let comp = Ical.component(jcalData);
+
+                comp.getAllSubcomponents('vevent').forEach((event) => {
+
+                    let start = event.getFirstProperty('dtstart').getFirstValue();
+                    let end = event.getFirstProperty('dtend').getFirstValue();
+
+                    // Convert to Europe/Zurich timezone
+                    start.zone = ICAL.TimezoneService.get('Europe/Zurich');
+                    end.zone = ICAL.TimezoneService.get('Europe/Zurich');
+
+                    // Update the event
+                    event.updatePropertyWithValue('dtstart', start);
+                    event.updatePropertyWithValue('dtend', end);
+
+
+                    this.events.push(new Event({
+                        start: start,
+                        end: end,
+                        summary: event.getFirstPropertyValue('summary'),
+                        description: event.getFirstPropertyValue('description'),
+                    }));
+                });
+
                 break;
             case 'json':
-                // code blockx
+                // code block
                 break;
             case 'csv':
                 // code block
@@ -29,52 +56,21 @@ class Calendar {
         }
     }
 
-    //Private methods
+    generate = () => {
+        this.events.forEach((event) => {
+            let vevent = Ical.component('vevent');
 
+            vevent.updatePropertyWithValue('dtstart', event.start);
+            vevent.updatePropertyWithValue('dtend', event.end);
 
-    // event ICS to object data
-    #formatEvent = () => {
-        try {
-            if (source == null) throw new Error('No source file specified')
+            vevent.updatePropertyWithValue('summary', event.summary);
 
-            let file = fileManager(source, 'utf8');
-            
-            let jcalData = ICAL.parse(file);
-            let comp = new ICAL.Component(jcalData);
+            this.outputCalendar.addSubcomponent(vevent);
+        });
 
-            // Convert all events to the same timezone
-            comp.getAllSubcomponents('vevent').forEach((event) => {
-                let start = event.getFirstProperty('dtstart').getFirstValue();
-                let end = event.getFirstProperty('dtend').getFirstValue();
-
-                // Convert to Europe/Zurich timezone
-                start.zone = ICAL.TimezoneService.get('Europe/Zurich');
-                end.zone = ICAL.TimezoneService.get('Europe/Zurich');
-
-                // Update the event
-                event.updatePropertyWithValue('dtstart', start);
-                event.ucomppdatePropertyWithValue('dtend', end);
-
-                // Add the event to the global calendar
-                this.outputCalendar.addSubcomponent(event);
-            });
-
-        } catch (err) {
-            console.error(err);
-        }
+        return this.outputCalendar.toString();
     }
 
-    #formatToJson = (source) => {
-
-    }
-
-    #formatToCsv = (source) => {
-
-    }
-
-    #formatToXlsx = (source) => {
-
-    }
 }
 
-exports.default = Calendar;
+module.exports = Calendar;
