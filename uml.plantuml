@@ -1,0 +1,45 @@
+@startuml
+
+class WebServer {
+  +app: express()
+  +get(route: string, callback: function)
+  +post(route: string, callback: function)
+  +listen(port: number, callback: function)
+}
+
+class Database {
+  -db: sqlite3.Database
+  +run(query: string, params: array, callback: function)
+  +get(query: string, params: array, callback: function)
+}
+
+class Calendar {
+  -UUID: TEXT
+  -calendar: TEXT
+  -user: USER
+  +formatCalendar(source: string)
+  +clearCalendar()
+}
+
+class Event {
+}
+
+class User {
+  -email: STRING
+}
+
+class Policy {
+  +checkUser(req: Request, res: Response, next: function)
+  +checkCalendar(req: Request, res: Response, next: function)
+  +checkEvent(req: Request, res: Response, next: function)
+}
+
+class Multer {
+  +upload: function
+}
+
+WebServer -- Multer: Uses
+WebServer -- Database: Uses
+WebServer -- Calendar: Uses
+
+@enduml
