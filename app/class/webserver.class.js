@@ -61,15 +61,24 @@ class Webserver {
 
     }
 
-   async submitCalendar(req, res) {
-        const data = await req.file()
-
-        const storedFile = fs.createWriteStream('./calendars/temps/' + data.filename)
-        await pump(data.file, storedFile)
-
-        return { message : 'ok'}
-
+    async submitCalendar(req, res) {
+        const data = await req.file();
+    
+        const originalName = data.filename;
+        const extension = path.extname(originalName);
+        const baseName = path.basename(originalName, extension);
+        const date = Date.now();
+    
+        const newFileName = `${baseName}-${date}${extension}`;
+        const filePath = path.join('./calendars/temps', newFileName);
+    
+        const storedFile = fs.createWriteStream(filePath);
+    
+        await pump(data.file, storedFile);
+    
+        return { message : 'ok' };
     }
+    
 
     // Static views home 
     getHome(req, res) {
