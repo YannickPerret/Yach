@@ -24,6 +24,7 @@ class Calendar {
                 let comp = Ical.component(jcalData);
 
                 for (let event of comp.getAllSubcomponents('vevent')) {
+                    console.log("event", event)
                     let start = event.getFirstProperty('dtstart').getFirstValue().toJSDate();
                     let end = event.getFirstProperty('dtend').getFirstValue().toJSDate();
 
@@ -42,32 +43,9 @@ class Calendar {
                     this.events.push(newEvent);
                 }
 
-                for (let event of this.events) {
-                    console.log(event.calendarId)
-                    await Database.db.event.create({
-                        data: {
-                            id: event.id,
-                            summary: event.summary,
-                            description: "fsfdfsf",
-                            start: event.start.toISOString(),
-                            end: event.end.toISOString(),
-                            sequence: "1",
-                            status: "CONFIRMED",
-                            transp: "OPAQUE",
-                            drStamp: "ffwsdfsfd",
-                            categories: "test",
-                            location: "test",
-                            geo: "test",
-                            url: "test",
-                            rRule: "test",
-                            calendar:{
-                                connect:{
-                                    id: event.calendarId
-                                }
-                            }
-                        }
-                    });
-                  }
+                /*for (let event of this.events) {
+                    await event.persist();
+                }*/
 
                 break;
             case 'json':

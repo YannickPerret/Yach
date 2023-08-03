@@ -71,45 +71,52 @@ class Webserver {
 
     async submitCalendar(req, reply) {
         let calendar
-        const data = await req.file()
+        const data = await req.body.file
+    
+        let selectedCalendars = [];
 
-        let selectedCalendars = req.body.calendars || [];
-        if (data !== undefined) {
+        if (req.body.calendars && req.body.calendars.value.length > 0) {
+            selectedCalendars.push(req.body.calendars.value);
+        }
 
+        console.log(data)
+        if (data.filename !== "") {
             const originalName = data.filename;
             const extension = path.extname(originalName);
             const baseName = path.basename(originalName, extension);
             const date = Date.now();
-
+    
             const newFileName = `${baseName}-${date}${extension}`;
             const filePath = path.join('./calendars/temps', newFileName);
-
+    
             const storedFile = fs.createWriteStream(filePath);
-
             await pump(data.file, storedFile);
-            // if a file is uploaded, add it to the selected calendars
-
-            if (Array.isArray(selectedCalendars)) {
-                selectedCalendars.push(data.path);
-            } else if (selectedCalendars) {
-                selectedCalendars = [selectedCalendars, data.path];
-            } else {
-                selectedCalendars = [data.path];
+            storedFile.end();
+    
+            selectedCalendars.push(filePath);
+        }
+    
+        // process the selected calendars
+        // create a single calendar object
+        calendar = new Calendar({ format: 'ics' });
+        await calendar.persist();
+    
+        console.log("selectedCalendars", selectedCalendars)
+    
+        if (Array.isArray(selectedCalendars)) {
+            await selectedCalendars.forEach(async (calendarPath, index) => {
+                let tempCalendar = new Calendar({ source: new FileAdapter({ fileName: calendarPath, encoding: 'utf8' }), format: 'ics' });
+                await tempCalendar.parseEvents();
+                // add each event to the main calendar
+                calendar.events.push(...tempCalendar.events);
+            });
+            
+           for (let event of calendar.events) {
+                event.calendarId = calendar.id;
+                await event.persist();
             }
         }
-
-        // process the selected calendars
-        if (Array.isArray(selectedCalendars)) {
-            selectedCalendars.forEach((calendarPath, index) => {
-                calendar = new Calendar({ source: new FileAdapter({ fileName: calendarPath, encoding: 'utf8' }), format: 'ics' });
-                calendar.persist();
-                calendar.parseEvents();
-            });
-        } else { // if selectedCalendars is a string
-            calendar = new Calendar({ source: new FileAdapter({ fileName: selectedCalendars.value, encoding: 'utf8' }), format: 'ics' });
-            await calendar.persist();
-            await calendar.parseEvents();
-        }
+    
         return { message: 'ok', calendars: calendar };
     }
 

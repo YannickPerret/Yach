@@ -37,11 +37,24 @@ class Event {
       data: {
         id: this.id,
         summary: this.summary,
-        description: this.description,
-        start: this.start,
-        end: this.end,
-        calendarId: this.calendarId,
-      },
+        description: "fsfdfsf",
+        start: this.start.toISOString(),
+        end: this.end.toISOString(),
+        sequence: 1,
+        status: "CONFIRMED",
+        transp: "OPAQUE",
+        drStamp: "ffwsdfsfd",
+        categories: "test",
+        location: "test",
+        geo: "test",
+        url: "test",
+        rRule: "test",
+        calendar: {
+          connect: {
+            id: this.calendarId
+          }
+        }
+      }
     });
   }
 }
