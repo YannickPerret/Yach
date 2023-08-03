@@ -1,6 +1,7 @@
-const Ical = require('./adapter/ical.class');
-const Event = require('./event.class');
+const Ical = require('./adapter/ical');
+const Event = require('./event');
 const ICAL = require('ical.js');
+const Database = require('./database');
 
 class Calendar {
 
@@ -67,8 +68,20 @@ class Calendar {
 
             this.outputCalendar.addSubcomponent(vevent);
         });
-
         return this.outputCalendar.toString();
+    }
+
+    async persist() {
+        const db = Database.getInstance().db;
+
+        await db.calendar.create({
+            data: {
+                id: this.id,
+                name: "teeeeest",
+            },
+        });
+
+        await db.$disconnect();
     }
 
 }

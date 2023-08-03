@@ -4,7 +4,6 @@ class WebServer {
   +app: express()
   +get(route: string, callback: function)
   +post(route: string, callback: function)
-  +listen(port: number, callback: function)
 }
 
 class Database {
@@ -15,16 +14,36 @@ class Database {
 
 class Calendar {
   -UUID: TEXT
-  -calendar: TEXT
+  -source: TEXT
   -user: USER
   +formatCalendar(source: string)
   +clearCalendar()
 }
 
+
 class Event {
+  -uuid: TEXT
+  -summary: TEXT
+  -sequence: INTEGER
+  -status: STRING
+  -transp: STRING
+  -rRule: ARRAY
+  -dtStart: DATETIME
+  -dtEnd: DATETIME
+  -drStamp: DATETIME
+  -categories: ARRAY
+  -location: STRING
+  -geo: STRING
+  -description: STRING
+  -url: STRING
+
+  +formatEvent(event: TEXT)
+  +parseEvent(event: TEXT)
+  +clearEvent()
 }
 
 class User {
+  -uuid: TEXT
   -email: STRING
 }
 

@@ -1,9 +1,9 @@
 //**********************************************//
 
 /************ Import / include  *****************/
-const Webserver = require('./class/webserver.class');
-const Calendar = require('./class/calendar.class');
-const FileAdapter = require('./class/fileAdapter.class');
+const Webserver = require('./class/webserver');
+const Calendar = require('./class/calendar');
+const FileAdapter = require('./class/fileAdapter');
 const yaml = require('js-yaml');
 require('dotenv').config();
 
