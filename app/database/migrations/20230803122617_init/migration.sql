@@ -8,7 +8,7 @@ CREATE TABLE "Calendar" (
 
 -- CreateTable
 CREATE TABLE "Event" (
-    "uuid" TEXT NOT NULL PRIMARY KEY,
+    "id" TEXT NOT NULL PRIMARY KEY,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" DATETIME NOT NULL,
     "summary" TEXT NOT NULL,
@@ -16,12 +16,13 @@ CREATE TABLE "Event" (
     "status" TEXT NOT NULL,
     "transp" TEXT NOT NULL,
     "rRule" TEXT NOT NULL,
-    "start" DATETIME NOT NULL,
-    "end" DATETIME NOT NULL,
-    "drStamp" DATETIME NOT NULL,
+    "start" TEXT NOT NULL,
+    "end" TEXT NOT NULL,
+    "drStamp" TEXT NOT NULL,
     "categories" TEXT NOT NULL,
     "location" TEXT NOT NULL,
     "geo" TEXT NOT NULL,
     "description" TEXT NOT NULL,
-    "url" TEXT NOT NULL
+    "url" TEXT NOT NULL,
+    "calendarId" TEXT NOT NULL
 );

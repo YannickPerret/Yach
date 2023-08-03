@@ -1,6 +1,7 @@
 datasource db {
   provider = "sqlite"
   url      = "file:./dev.db"
+  relationMode = "prisma"
 }
 
 generator client {
@@ -16,23 +17,25 @@ model Calendar {
 }
 
 model Event {
-  uuid          String   @id @default(uuid())
+  id          String   @id @default(uuid())
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
   summary       String
-  sequence      String
+  sequence      Int
   status        String
   transp        String
   rRule         String
-  start         DateTime
-  end           DateTime
-  drStamp       DateTime
+  start         String
+  end           String
+  drStamp       String
   categories    String
   location      String
   geo           String
   description   String
   url           String
-  calendarId    String 
   calendar      Calendar @relation(fields: [calendarId], references: [id])
+  calendarId    String 
+
+  @@index([calendarId])
 }
 

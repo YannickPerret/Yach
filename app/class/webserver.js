@@ -28,7 +28,7 @@ class Webserver {
             root: path.join(__dirname, '../public'),
             prefix: '/',
         });
-    
+
         this.app.register(view, {
             engine: { ejs },
             root: path.join(__dirname, '../public')
@@ -37,7 +37,7 @@ class Webserver {
         this.app.register(multipart, { attachFieldsToBody: true })
 
     }
-    
+
 
     initRoutes() {
         routes(this.app, this);
@@ -47,12 +47,12 @@ class Webserver {
         try {
             await this.app.listen({ port: this.port }, () => {
                 console.log(`WEB SERVER : Server listening on port ${this.port}`);
-            }); 
+            });
         }
         catch (err) {
             this.app.log.error(err)
             process.exit(1)
-          }
+        }
     }
 
     // Methodes
@@ -69,58 +69,57 @@ class Webserver {
 
     }
 
-    async submitCalendar (req, reply) {
+    async submitCalendar(req, reply) {
         let calendar
         const data = await req.file()
 
         let selectedCalendars = req.body.calendars || [];
-
-        if (data) {
+        if (data !== undefined) {
 
             const originalName = data.filename;
             const extension = path.extname(originalName);
             const baseName = path.basename(originalName, extension);
             const date = Date.now();
-        
+
             const newFileName = `${baseName}-${date}${extension}`;
             const filePath = path.join('./calendars/temps', newFileName);
-        
+
             const storedFile = fs.createWriteStream(filePath);
-        
+
             await pump(data.file, storedFile);
-             // if a file is uploaded, add it to the selected calendars
+            // if a file is uploaded, add it to the selected calendars
 
             if (Array.isArray(selectedCalendars)) {
-            selectedCalendars.push(data.path);
+                selectedCalendars.push(data.path);
             } else if (selectedCalendars) {
-            selectedCalendars = [selectedCalendars, data.path];
+                selectedCalendars = [selectedCalendars, data.path];
             } else {
-            selectedCalendars = [data.path];
+                selectedCalendars = [data.path];
             }
         }
 
         // process the selected calendars
-        if (Array.isArray(selectedCalendars)) { // if selectedCalendars is an array
+        if (Array.isArray(selectedCalendars)) {
             selectedCalendars.forEach((calendarPath, index) => {
-                calendar = new Calendar({source : new FileAdapter({fileName: calendarPath, encoding: 'utf8'}), format: 'ics'});
+                calendar = new Calendar({ source: new FileAdapter({ fileName: calendarPath, encoding: 'utf8' }), format: 'ics' });
+                calendar.persist();
                 calendar.parseEvents();
             });
         } else { // if selectedCalendars is a string
-            calendar = new Calendar({source : new FileAdapter({fileName: selectedCalendars.value, encoding: 'utf8'}), format: 'ics'});
-            calendar.parseEvents();
+            calendar = new Calendar({ source: new FileAdapter({ fileName: selectedCalendars.value, encoding: 'utf8' }), format: 'ics' });
+            await calendar.persist();
+            await calendar.parseEvents();
         }
-
-        calendar.persist();
-        return { message : 'ok', calendars: calendar };
+        return { message: 'ok', calendars: calendar };
     }
-    
+
 
     // Static views home 
     getHome(req, res) {
         let calendars = Object.entries(this.fileConfig['Calendar Shared']).map(([name, path], index) => {
             return { id: `cal${index}`, name: name, path: path };
-          });
-        
+        });
+
         res.view('index.ejs', {
             title: 'Home Page',
             calendars: calendars
