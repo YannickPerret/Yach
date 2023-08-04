@@ -24,7 +24,6 @@ class Calendar {
                 let comp = Ical.component(jcalData);
 
                 for (let event of comp.getAllSubcomponents('vevent')) {
-                    console.log("event", event)
                     let start = event.getFirstProperty('dtstart').getFirstValue().toJSDate();
                     let end = event.getFirstProperty('dtend').getFirstValue().toJSDate();
 
@@ -85,6 +84,20 @@ class Calendar {
             },
         });
         console.log("calendar persisted")
+    }
+
+    async getCalendarById(id) {
+        try {
+            let calendar = await Database.db.calendar.findUnique({
+                where: {
+                    id: id,
+                },
+            });
+
+            return calendar;
+        } catch (error) {
+            console.error(error);
+        }   
     }
 }
 

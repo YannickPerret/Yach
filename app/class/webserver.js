@@ -1,13 +1,30 @@
 const Fastify = require('fastify');
 const view = require('@fastify/view');
-const multipart = require('@fastify/multipart');
 const ejs = require('ejs');
 const routes = require('./router');
 const path = require('path');
 const fs = require('fs')
-const pump = require('pump')
 const Calendar = require('./calendar');
 const FileAdapter = require('./fileAdapter');
+
+const fastifyMulter = require('fastify-multer')
+
+// Configure multer storage
+const storage = fastifyMulter.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, './calendars/temps/')
+    },
+    filename: function (req, file, cb) {
+        const originalName = file.originalname;
+        const extension = path.extname(originalName);
+        const baseName = path.basename(originalName, extension);
+        const date = Date.now();
+        const newFileName = `${baseName}-${date}${extension}`;
+        cb(null, newFileName)
+    }
+});
+
+const upload = fastifyMulter({ storage: storage })
 
 class Webserver {
     constructor(config) {
@@ -16,7 +33,6 @@ class Webserver {
         this.fileConfig = config.fileConfig;
 
         this.getHome = this.getHome.bind(this);
-
 
         this.initMiddleware();
         this.initRoutes();
@@ -34,13 +50,11 @@ class Webserver {
             root: path.join(__dirname, '../public')
         });
 
-        this.app.register(multipart, { attachFieldsToBody: true })
-
+        this.app.register(upload.contentParser);
     }
 
-
     initRoutes() {
-        routes(this.app, this);
+        routes(this.app, this, upload);
     }
 
     async start() {
@@ -66,59 +80,58 @@ class Webserver {
     }
 
     getCalendarById(req, res) {
+        let id = req.params.id;
+
+        let calendarData = new Calendar(getCalendarById(id))
+        let comp = calendarData.generate();
+
+        // set the correct headers
+        res.set('Content-Type', 'text/calendar');
+        res.send(comp.toString());
 
     }
 
     async submitCalendar(req, reply) {
-        let calendar
-        const data = await req.body.file
-    
-        let selectedCalendars = [];
-
-        if (req.body.calendars && req.body.calendars.value.length > 0) {
-            selectedCalendars.push(req.body.calendars.value);
+        if (!req.file) {
+            return reply.code(400).send('File is missing');
         }
-
-        console.log(data)
-        if (data.filename !== "") {
-            const originalName = data.filename;
-            const extension = path.extname(originalName);
-            const baseName = path.basename(originalName, extension);
-            const date = Date.now();
     
-            const newFileName = `${baseName}-${date}${extension}`;
-            const filePath = path.join('./calendars/temps', newFileName);
+        let calendar;
+        const data = req.file;
+        const inputCalendarsSelected = req.body.calendars;
+        let selectedCalendars = [];
     
-            const storedFile = fs.createWriteStream(filePath);
-            await pump(data.file, storedFile);
-            storedFile.end();
+        if (inputCalendarsSelected && inputCalendarsSelected.length > 0) {
+            selectedCalendars.push(inputCalendarsSelected);
+        }
     
+        if (data) {
+            const filePath = data.path;
+            console.log('File upload finished successfully');
             selectedCalendars.push(filePath);
         }
     
-        // process the selected calendars
-        // create a single calendar object
         calendar = new Calendar({ format: 'ics' });
         await calendar.persist();
-    
-        console.log("selectedCalendars", selectedCalendars)
     
         if (Array.isArray(selectedCalendars)) {
             await selectedCalendars.forEach(async (calendarPath, index) => {
                 let tempCalendar = new Calendar({ source: new FileAdapter({ fileName: calendarPath, encoding: 'utf8' }), format: 'ics' });
                 await tempCalendar.parseEvents();
-                // add each event to the main calendar
                 calendar.events.push(...tempCalendar.events);
             });
-            
-           for (let event of calendar.events) {
+    
+            for (let event of calendar.events) {
                 event.calendarId = calendar.id;
                 await event.persist();
             }
         }
     
-        return { message: 'ok', calendars: calendar };
+        reply.send({ url: `${process.env.ENDPOINT_URL}:${process.env.ENDPOINT_PORT}/api/v1/calendar/${calendar.id}` });
     }
+    
+    
+    
 
 
     // Static views home 
@@ -135,3 +148,7 @@ class Webserver {
 }
 
 module.exports = Webserver;
+
+
+
+//http://localhost:3000/api/v1/calendar/ac57b6da-e246-43b7-bff2-d557f42413ba
