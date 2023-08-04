@@ -7,11 +7,11 @@ const { v4: uuidv4 } = require('uuid');
 class Calendar {
 
     constructor(config) {
-        this.id = uuidv4();
+        this.id = config.id || uuidv4();
         this.source = config.source;
         this.format = config.format;
         this.outputCalendar = Ical.component(['vcalendar', [], []]);
-        this.events = [];
+        this.events = config.events || [];
     }
 
     parseEvents = async () => {
@@ -86,14 +86,23 @@ class Calendar {
         console.log("calendar persisted")
     }
 
-    async getCalendarById(id) {
+    static async getCalendarById(id) {
         try {
-            let calendar = await Database.db.calendar.findUnique({
+            let calendarData = await Database.db.calendar.findUnique({
                 where: {
                     id: id,
                 },
+                include: {
+                    events: true,
+                },
             });
-
+            
+            if (calendarData.events) {
+                calendarData.events = calendarData.events.map(eventData => new Event(eventData));
+            }
+            
+            let calendar = new Calendar(calendarData);
+            
             return calendar;
         } catch (error) {
             console.error(error);

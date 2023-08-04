@@ -79,16 +79,16 @@ class Webserver {
 
     }
 
-    getCalendarById(req, res) {
+    async getCalendarById(req, reply) {
         let id = req.params.id;
 
-        let calendarData = new Calendar(getCalendarById(id))
+        let calendarData = await Calendar.getCalendarById(id);
+
         let comp = calendarData.generate();
 
         // set the correct headers
-        res.set('Content-Type', 'text/calendar');
-        res.send(comp.toString());
-
+        reply.type('Content-Type', 'text/calendar');
+        reply.status(200).send(comp.toString());
     }
 
     async submitCalendar(req, reply) {
@@ -135,12 +135,12 @@ class Webserver {
 
 
     // Static views home 
-    getHome(req, res) {
+    getHome(req, reply) {
         let calendars = Object.entries(this.fileConfig['Calendar Shared']).map(([name, path], index) => {
             return { id: `cal${index}`, name: name, path: path };
         });
 
-        res.view('index.ejs', {
+        reply.status(200).view('index.ejs', {
             title: 'Home Page',
             calendars: calendars
         });
