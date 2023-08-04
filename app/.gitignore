@@ -130,4 +130,4 @@ dist
 .pnp.*
 
 
-/calendars/temps/
+calendars/temps/*
