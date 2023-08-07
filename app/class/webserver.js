@@ -78,17 +78,20 @@ class Webserver {
 
     async getCalendarById(req, reply) {
         let id = req.params.id;
-
+        let sharedCalendarData
         let calendarData = await Calendar.getById(id);
-        if (!calendarData) {
-            calendarData = await SharedCalendar.getById(id);
-            if (!calendarData) {
+
+
+        if (calendarData === null) {
+            sharedCalendarData = await SharedCalendar.getById(id);
+            if (!sharedCalendarData) {
                 return reply.status(404).send({ error: 'No calendar found' });
             }
         }
 
-        let comp = calendarData.generate();
+        let comp = calendarData !== null ? calendarData.generate() : sharedCalendarData.generate();
 
+        console.log(comp.toString());
         // set the correct headers
         reply.type('Content-Type', 'text/calendar');
         reply.status(200).send(comp.toString());

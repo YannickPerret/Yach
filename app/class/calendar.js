@@ -121,7 +121,6 @@ class Calendar {
             });
     
             if (!calendarData) {
-                console.error(`No calendar found with ID ${id}`);
                 return null;
             }
     
