@@ -5,6 +5,7 @@ const routes = require('./router');
 const path = require('path');
 const fs = require('fs')
 const Calendar = require('./calendar');
+const SharedCalendar = require('./sharedCalendar');
 const FileAdapter = require('./fileAdapter');
 
 const fastifyMulter = require('fastify-multer')
@@ -71,10 +72,6 @@ class Webserver {
 
     // Methodes
 
-    getCalendar(req, res) {
-
-    }
-
     getCalendars(req, res) {
 
     }
@@ -91,58 +88,93 @@ class Webserver {
         reply.status(200).send(comp.toString());
     }
 
+    async updateCalendar(req, res) {
+        let id = req.params.id;
+
+        console.log(req.body)
+        await Calendar.getCalendarById(id);
+
+        console.log(req.body)
+
+    }
+
     async submitCalendar(req, reply) {
-        if (!req.file) {
-            return reply.code(400).send('File is missing');
-        }
-    
-        let calendar;
         const data = req.file;
         const inputCalendarsSelected = req.body.calendars;
+        const typeCalendar = req.body.type === "PROFESSIONAL" || req.body.type === "PERSONAL" || req.body.type === "OTHER" ? req.body.type : "OTHER";
+        const nameCalendar = req.body.name ? req.body.name : "Yoda Default";
         let selectedCalendars = [];
-    
+        let filePath;
+        let outpuCalendar;
+
         if (inputCalendarsSelected && inputCalendarsSelected.length > 0) {
-            selectedCalendars.push(inputCalendarsSelected);
+            selectedCalendars = inputCalendarsSelected;
         }
-    
+
         if (data) {
-            const filePath = data.path;
+            filePath = data.path;
             console.log('File upload finished successfully');
-            selectedCalendars.push(filePath);
-        }
-    
-        calendar = new Calendar({ format: 'ics' });
-        await calendar.persist();
-    
-        if (Array.isArray(selectedCalendars)) {
-            await selectedCalendars.forEach(async (calendarPath, index) => {
-                let tempCalendar = new Calendar({ source: new FileAdapter({ fileName: calendarPath, encoding: 'utf8' }), format: 'ics' });
-                await tempCalendar.parseEvents();
-                calendar.events.push(...tempCalendar.events);
-            });
-    
-            for (let event of calendar.events) {
-                event.calendarId = calendar.id;
+
+            let uploadCalendar = new Calendar({ source: new FileAdapter({ fileName: filePath, encoding: 'utf8' }), format: 'ics', type: typeCalendar, name: nameCalendar});
+            await uploadCalendar.persist();
+
+            await uploadCalendar.parseEvents();
+
+            for (let event of uploadCalendar.events) {
+                event.calendarId = uploadCalendar.id;
                 await event.persist();
             }
-        }
-    
-        reply.send({ url: `${process.env.ENDPOINT_URL}:${process.env.ENDPOINT_PORT}/api/v1/calendar/${calendar.id}` });
-    }
-    
-    
-    
+            
+            selectedCalendars.push(filePath);
+            console.log("one calendar upload")
 
+            outpuCalendar = uploadCalendar
+
+        }
+
+        if (Array.isArray(selectedCalendars) && selectedCalendars.length > 0) {
+            if (selectedCalendars.length > 1) {
+                let newSharedCalendar = new SharedCalendar({ name: nameCalendar });
+
+                for (let selectedCalendar of selectedCalendars) {
+                    let calendar = await Calendar.getCalendarById(selectedCalendar)
+                    await newSharedCalendar.add(calendar);
+                }
+                await newSharedCalendar.persist();
+
+
+                console.log("multiple calendar upload")
+                outpuCalendar = newSharedCalendar;
+
+            }
+
+            if (data) {
+                fs.unlink(filePath, (err) => {
+                    if (err) {
+                        console.error(err)
+                        return
+                    }
+                }
+                )
+            }
+        }
+        else
+            return reply.status(400).send({ error: 'No calendars selected' });
+
+        reply.send({ url: `${process.env.ENDPOINT_URL}:${process.env.ENDPOINT_PORT}/api/v1/calendar/${outpuCalendar.id}` });
+    }
 
     // Static views home 
-    getHome(req, reply) {
-        let calendars = Object.entries(this.fileConfig['Calendar Shared']).map(([name, path], index) => {
-            return { id: `cal${index}`, name: name, path: path };
-        });
+    async getHome(req, reply) {
 
-        reply.status(200).view('index.ejs', {
+        //get all calendar by database Calendar
+        let calendars = await Calendar.getAll();
+        let sharedCalendars = await SharedCalendar.getAll();
+
+        return reply.status(200).view('index.ejs', {
             title: 'Home Page',
-            calendars: calendars
+            calendars: calendars,
+            sharedCalendars: sharedCalendars
         });
     }
 }

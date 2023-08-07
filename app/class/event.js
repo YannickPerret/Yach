@@ -33,29 +33,70 @@ class Event {
   }
 
   async persist() {
-    await Database.db.event.create({
-      data: {
-        id: this.id,
-        summary: this.summary,
-        description: "fsfdfsf",
-        start: this.start.toISOString(),
-        end: this.end.toISOString(),
-        sequence: 1,
-        status: "CONFIRMED",
-        transp: "OPAQUE",
-        drStamp: "ffwsdfsfd",
-        categories: "test",
-        location: "test",
-        geo: "test",
-        url: "test",
-        rRule: "test",
-        calendar: {
-          connect: {
-            id: this.calendarId
-          }
+    let storedEvent;
+
+    // find if event exist before create
+    const event = await Database.db.event.findUnique({
+      where: {
+        id: this.id
+      }
+    });
+
+    if (event) {
+      // update event
+      storedEvent = await Database.db.event.update({
+        where: {
+          id: this.id
+        },
+        data: this._eventData()
+      });
+    }
+    else {
+      storedEvent = await Database.db.event.create({
+        data: this._eventData()
+      });
+    }
+
+    await this._associateWithCalendar(storedEvent.id);
+  }
+
+  _eventData() {
+    return {
+      id: this.id,
+      summary: this.summary,
+      description: this.description, // Assuming you'd want the actual description
+      start: this.start.toISOString(),
+      end: this.end.toISOString(),
+      sequence: 1,
+      status: "CONFIRMED",
+      transp: "OPAQUE",
+      drStamp: "ffwsdfsfd",
+      categories: "test",
+      location: "test",
+      geo: "test",
+      url: "test",
+      rRule: "test",
+    };
+  }
+
+  async _associateWithCalendar(eventId) {
+    const associationExists = await Database.db.calendarEventAssociation.findUnique({
+      where: {
+        eventId_calendarId: {
+          eventId: eventId,
+          calendarId: this.calendarId
         }
       }
     });
+
+    if (!associationExists) {
+      await Database.db.calendarEventAssociation.create({
+        data: {
+          eventId: eventId,
+          calendarId: this.calendarId
+        }
+      });
+    }
   }
 }
 

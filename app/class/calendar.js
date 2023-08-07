@@ -12,6 +12,8 @@ class Calendar {
         this.format = config.format;
         this.outputCalendar = Ical.component(['vcalendar', [], []]);
         this.events = config.events || [];
+        this.name = config.name;
+        this.type = config.type;
     }
 
     parseEvents = async () => {
@@ -42,10 +44,6 @@ class Calendar {
                     this.events.push(newEvent);
                 }
 
-                /*for (let event of this.events) {
-                    await event.persist();
-                }*/
-
                 break;
             case 'json':
                 // code block
@@ -60,7 +58,6 @@ class Calendar {
                 console.log("no file recognized")
         }
     }
-
 
     generate = () => {
         this.events.forEach((event) => {
@@ -77,13 +74,35 @@ class Calendar {
     }
 
     async persist() {
-        await Database.db.calendar.create({
-            data: {
-                id: this.id,
-                name: "teeeeest",
-            },
+        // find if calendar exist before create
+        const calendar = await Database.db.calendar.findUnique({
+            where: {
+                id: this.id
+            }
         });
-        console.log("calendar persisted")
+
+        if (calendar) {
+            // update calendar
+            await Database.db.calendar.update({
+                where: {
+                    id: this.id
+                },
+                data: {
+                    name: this.name,
+                    type: this.type,
+                }
+            });
+        }
+        else {
+            await Database.db.calendar.create({
+                data: {
+                    id: this.id,
+                    name: this.name,
+                    type: this.type,
+                },
+            });
+            console.log("calendar persisted")
+        }
     }
 
     static async getCalendarById(id) {
@@ -93,20 +112,56 @@ class Calendar {
                     id: id,
                 },
                 include: {
-                    events: true,
-                },
+                    CalendarEventAssociations: {
+                        include: {
+                            event: true
+                        }
+                    }
+                }
             });
-            
-            if (calendarData.events) {
-                calendarData.events = calendarData.events.map(eventData => new Event(eventData));
+    
+            if (!calendarData) {
+                console.error(`No calendar found with ID ${id}`);
+                return null;
             }
-            
+    
+            if (calendarData.CalendarEventAssociations) {
+                calendarData.events = calendarData.CalendarEventAssociations.map(association => new Event(association.event));
+                delete calendarData.CalendarEventAssociations; // Optional: remove the association data if you no longer need it
+            }
+    
             let calendar = new Calendar(calendarData);
-            
             return calendar;
+    
         } catch (error) {
             console.error(error);
-        }   
+        }
+    }
+    
+    
+
+    // get all calendars with filter no required
+    static async getAll(filter = null) {
+        try {
+            let calendarsData 
+            if (filter != null) {
+                calendarsData = await Database.db.calendar.findMany({
+                    where: {
+                        ...filter
+                    },
+                });
+            }
+            else {
+                calendarsData = await Database.db.calendar.findMany({
+                });
+            }
+
+            let calendars = calendarsData.map(calendarData => new Calendar(calendarData));
+
+            return calendars;
+        } catch (error) {
+            console.error(error);
+        }
     }
 }
 
