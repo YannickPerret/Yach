@@ -133,3 +133,4 @@ dist
 calendars/temps/*
 
 database/dev.*
+database/dev.db
