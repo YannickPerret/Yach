@@ -91,7 +91,6 @@ class Webserver {
 
         let comp = calendarData !== null ? calendarData.generate() : sharedCalendarData.generate();
 
-        console.log(comp.toString());
         // set the correct headers
         reply.type('Content-Type', 'text/calendar');
         reply.status(200).send(comp.toString());

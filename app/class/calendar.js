@@ -105,6 +105,22 @@ class Calendar {
         }
     }
 
+    async getEvents() {
+        try {
+            let eventsData = await Database.db.event.findMany({
+                where: {
+                    calendarId: this.id
+                }
+            });
+
+            let events = eventsData.map(eventData => new Event(eventData));
+
+            return events;
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
     static async getById(id) {
         try {
             let calendarData = await Database.db.calendar.findUnique({
@@ -137,8 +153,6 @@ class Calendar {
         }
     }
     
-    
-
     // get all calendars with filter no required
     static async getAll(filter = null) {
         try {

@@ -35,11 +35,22 @@ class SharedCalendar {
                 include: {
                     SharedCalendarAssociations: {
                         include: {
-                            calendar: true
+                            calendar: {
+                                include: {
+                                    CalendarEventAssociations: {
+                                        include: {
+                                            event: true
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
             });
+            sharedCalendar.calendars = sharedCalendar.SharedCalendarAssociations
+            delete sharedCalendar.SharedCalendarAssociations;
+
 
             if (!sharedCalendar) {
                 console.error(`No shared calendar found with ID ${id}`);
@@ -52,41 +63,20 @@ class SharedCalendar {
         }
     }
 
-//http://localhost:3000/api/v1/calendar/3645e741-f5d6-4738-b41c-4ea8fdd423bf
     generate() {
         this.calendars.forEach((calendar) => {
-
-            console.log("fsfsdfsdfsgfdgdfg")
-            calendar.events.forEach((event) => {
-                console.log(event)
+            calendar.calendar.CalendarEventAssociations.forEach((association) => {
                 let vevent = Ical.component('vevent');
 
-                vevent.updatePropertyWithValue('dtstart', event.start);
-                vevent.updatePropertyWithValue('dtend', event.end);
+                vevent.updatePropertyWithValue('dtstart', association.event.start);
+                vevent.updatePropertyWithValue('dtend', association.event.end);
 
-                vevent.updatePropertyWithValue('summary', event.summary);
+                vevent.updatePropertyWithValue('summary', association.event.summary);
 
                 this.outputCalendar.addSubcomponent(vevent);
             });
         });
-
-        console.log(this.outputCalendar.toString())
-
-        
         return this.outputCalendar.toString();
-
-        /*this.events.forEach((event) => {
-            let vevent = Ical.component('vevent');
-
-            vevent.updatePropertyWithValue('dtstart', event.start);
-            vevent.updatePropertyWithValue('dtend', event.end);
-
-            vevent.updatePropertyWithValue('summary', event.summary);
-
-            this.outputCalendar.addSubcomponent(vevent);
-        });
-        return this.outputCalendar.toString();*/
-
     }
 
     // dans persist il y à une table d'association (SharedCalendarAssociation) entre sharedCalendar et calendar qu'il faut remplir
