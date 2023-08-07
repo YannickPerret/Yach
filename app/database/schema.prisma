@@ -8,49 +8,66 @@ generator client {
   provider = "prisma-client-js"
 }
 
+
 model Calendar {
-  id        String   @id @default(uuid())
-  name      String?
-  type      CalendarType
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  events    Event[] 
-  sharedCalendars SharedCalendar[]
-}
+  id                         String                     @id @default(uuid())
+  name                       String?
+  type                       String                     @default("OTHER")
+  createdAt                  DateTime                   @default(now())
+  updatedAt                  DateTime                   @updatedAt
+  SharedCalendarAssociations SharedCalendarAssociation[]
+  CalendarEventAssociations  CalendarEventAssociation[]
 
-model Event {
-  id          String   @id @default(uuid())
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-  summary       String 
-  sequence      Int?
-  status        String?
-  transp        String?
-  rRule         String?
-  start         String
-  end           String
-  drStamp       String
-  categories    String?
-  location      String?
-  geo           String?
-  description   String?
-  url           String?
-  calendar      Calendar @relation(fields: [calendarId], references: [id])
-  calendarId    String 
-
-  @@index([calendarId])
+  @@index([id])
 }
 
 model SharedCalendar {
-  id           String @id @default(uuid())
-  calendars    Calendar[] @relation(references: [id])
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                         String                     @id @default(uuid())
+  name                       String?
+  type                       String                     @default("OTHER")
+  createdAt                  DateTime                   @default(now())
+  updatedAt                  DateTime                   @updatedAt
+  SharedCalendarAssociations SharedCalendarAssociation[]
+
 }
 
-enum CalendarType {
-  PERSONAL
-  PROFESSIONAL
-  CLIENT
-  OTHER
+model SharedCalendarAssociation {
+  id                         String                     @id @default(uuid())
+  sharedCalendarId           String
+  calendarId                 String
+  calendar                   Calendar        @relation(fields: [calendarId], references: [id])
+  sharedCalendar             SharedCalendar  @relation(fields: [sharedCalendarId], references: [id])
+
+  @@index([sharedCalendarId], name: "idx_sharedCalendarId")
+}
+
+model Event {
+  id                         String                     @id @default(uuid())
+  createdAt                  DateTime                   @default(now())
+  updatedAt                  DateTime                   @updatedAt
+  summary                    String 
+  sequence                   Int?
+  status                     String?
+  transp                     String?
+  rRule                      String?
+  start                      String
+  end                        String
+  drStamp                    String
+  categories                 String?
+  location                   String?
+  geo                        String?
+  description                String?
+  url                        String?
+  CalendarEventAssociations  CalendarEventAssociation[]
+
+  @@index([id])
+}
+
+model CalendarEventAssociation {
+  eventId    String
+  calendarId String
+  event      Event     @relation(fields: [eventId], references: [id])
+  calendar   Calendar  @relation(fields: [calendarId], references: [id])
+
+  @@id([eventId, calendarId])
 }
