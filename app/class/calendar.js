@@ -105,7 +105,7 @@ class Calendar {
         }
     }
 
-    static async getCalendarById(id) {
+    static async getById(id) {
         try {
             let calendarData = await Database.db.calendar.findUnique({
                 where: {

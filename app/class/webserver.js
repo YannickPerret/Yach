@@ -79,7 +79,13 @@ class Webserver {
     async getCalendarById(req, reply) {
         let id = req.params.id;
 
-        let calendarData = await Calendar.getCalendarById(id);
+        let calendarData = await Calendar.getById(id);
+        if (!calendarData) {
+            calendarData = await SharedCalendar.getById(id);
+            if (!calendarData) {
+                return reply.status(404).send({ error: 'No calendar found' });
+            }
+        }
 
         let comp = calendarData.generate();
 
@@ -92,7 +98,7 @@ class Webserver {
         let id = req.params.id;
 
         console.log(req.body)
-        await Calendar.getCalendarById(id);
+        await Calendar.getById(id);
 
         console.log(req.body)
 
@@ -129,7 +135,6 @@ class Webserver {
             console.log("one calendar upload")
 
             outpuCalendar = uploadCalendar
-
         }
 
         if (Array.isArray(selectedCalendars) && selectedCalendars.length > 0) {
@@ -137,15 +142,13 @@ class Webserver {
                 let newSharedCalendar = new SharedCalendar({ name: nameCalendar });
 
                 for (let selectedCalendar of selectedCalendars) {
-                    let calendar = await Calendar.getCalendarById(selectedCalendar)
+                    let calendar = await Calendar.getById(selectedCalendar)
                     await newSharedCalendar.add(calendar);
                 }
                 await newSharedCalendar.persist();
 
-
                 console.log("multiple calendar upload")
                 outpuCalendar = newSharedCalendar;
-
             }
 
             if (data) {
