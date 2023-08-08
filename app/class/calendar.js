@@ -14,6 +14,7 @@ class Calendar {
         this.events = config.events || [];
         this.name = config.name;
         this.type = config.type;
+        this.parentCalendarId = config.parentCalendarId;
     }
 
     parseEvents = async () => {
@@ -73,6 +74,19 @@ class Calendar {
         return this.outputCalendar.toString();
     }
 
+    async addChildCalendar(calendar) {
+        calendar.parentCalendarId = this.id;
+        await calendar.persist();
+    }
+
+    async getChildCalendars() {
+        const childCalendars = await Calendar.getAll({ parentCalendarId: this.id });
+        if (!childCalendars) {
+            return [];
+        }
+        return childCalendars;
+    }
+
     async persist() {
         // find if calendar exist before create
         const calendar = await Database.db.calendar.findUnique({
@@ -90,20 +104,23 @@ class Calendar {
                 data: {
                     name: this.name,
                     type: this.type,
+                    parentCalendarId: this.parentCalendarId 
                 }
             });
-        }
-        else {
+            console.log("calendar updated")
+        } else {
             await Database.db.calendar.create({
                 data: {
                     id: this.id,
                     name: this.name,
                     type: this.type,
-                },
+                    parentCalendarId: this.parentCalendarId
+                }
             });
             console.log("calendar persisted")
         }
     }
+
 
     async getEvents() {
         try {
@@ -113,26 +130,26 @@ class Calendar {
                 }
             });
 
-            let events = eventsData.map(eventData => new Event(eventData));
+            console.log(eventsData)
 
-            return events;
+            return eventsData.map(eventData => new Event(eventData));
         } catch (error) {
             console.error(error);
         }
     }
 
+
     static async getById(id) {
         try {
-            let calendarData = await Database.db.calendar.findUnique({
-                where: {
-                    id: id,
-                },
+            const calendarData = await Database.db.calendar.findUnique({
+                where: { id },
                 include: {
                     CalendarEventAssociations: {
                         include: {
                             event: true
                         }
-                    }
+                    },
+                    subCalendars: true
                 }
             });
     
@@ -140,18 +157,19 @@ class Calendar {
                 return null;
             }
     
+            // Convert associated events into Event instances
             if (calendarData.CalendarEventAssociations) {
                 calendarData.events = calendarData.CalendarEventAssociations.map(association => new Event(association.event));
-                delete calendarData.CalendarEventAssociations; // Optional: remove the association data if you no longer need it
+                delete calendarData.CalendarEventAssociations;
             }
     
-            let calendar = new Calendar(calendarData);
-            return calendar;
-    
+            return new Calendar(calendarData);
         } catch (error) {
-            console.error(error);
+            console.error("Error fetching calendar by ID:", error);
+            throw error; 
         }
     }
+    
     
     // get all calendars with filter no required
     static async getAll(filter = null) {
@@ -165,8 +183,7 @@ class Calendar {
                 });
             }
             else {
-                calendarsData = await Database.db.calendar.findMany({
-                });
+                calendarsData = await Database.db.calendar.findMany();
             }
 
             let calendars = calendarsData.map(calendarData => new Calendar(calendarData));
