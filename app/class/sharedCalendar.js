@@ -68,9 +68,10 @@ class SharedCalendar {
             calendar.calendar.CalendarEventAssociations.forEach((association) => {
                 let vevent = Ical.component('vevent');
 
+                vevent.updatePropertyWithValue('uid', association.event.id);
                 vevent.updatePropertyWithValue('dtstart', association.event.start);
                 vevent.updatePropertyWithValue('dtend', association.event.end);
-
+                vevent.updatePropertyWithValue('transp', association.event.transp);
                 vevent.updatePropertyWithValue('summary', association.event.summary);
 
                 this.outputCalendar.addSubcomponent(vevent);

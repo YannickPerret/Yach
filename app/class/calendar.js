@@ -20,9 +20,8 @@ class Calendar {
         if (this.source == null) throw new Error('No source file specified')
 
         switch (this.source.fileName.substring(this.source.fileName.lastIndexOf('.') + 1)) {
-
             case 'ics':
-                let jcalData = Ical.parse(this.source.load());
+                let jcalData = await Ical.parse(this.source.load());
                 let comp = Ical.component(jcalData);
 
                 for (let event of comp.getAllSubcomponents('vevent')) {
@@ -34,12 +33,13 @@ class Calendar {
                     end.zone = ICAL.TimezoneService.get('Europe/Zurich');
 
                     let newEvent = new Event({
-                        uuid: event.getFirstPropertyValue('uid'),
+                        id: event.getFirstPropertyValue('uid'),
                         start: start,
                         end: end,
                         summary: event.getFirstPropertyValue('summary'),
                         description: event.getFirstPropertyValue('description'),
-                        calendarId: this.id
+                        calendarId: this.id,
+                        transp: event.getFirstPropertyValue('transp'),
                     });
                     this.events.push(newEvent);
                 }
@@ -62,7 +62,7 @@ class Calendar {
     generate = () => {
         this.events.forEach((event) => {
             let vevent = Ical.component('vevent');
-
+            vevent.updatePropertyWithValue('uid', event.id);
             vevent.updatePropertyWithValue('dtstart', event.start);
             vevent.updatePropertyWithValue('dtend', event.end);
 

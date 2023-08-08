@@ -2,7 +2,7 @@ const Database = require('./database');
 
 class Event {
   constructor(config) {
-    this.id = config.uuid;
+    this.id = config.id;
     this.summary = config.summary;
     this.sequence = config.sequence;
     this.status = config.status;
@@ -69,7 +69,7 @@ class Event {
       end: this.end.toISOString(),
       sequence: 1,
       status: "CONFIRMED",
-      transp: "OPAQUE",
+      transp: this.transp,
       drStamp: "ffwsdfsfd",
       categories: "test",
       location: "test",
