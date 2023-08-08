@@ -64,7 +64,7 @@ class Event {
     return {
       id: this.id,
       summary: this.summary,
-      description: this.description, // Assuming you'd want the actual description
+      description: this.description,
       start: this.start.toISOString(),
       end: this.end.toISOString(),
       sequence: 1,

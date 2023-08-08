@@ -124,19 +124,26 @@ class Calendar {
 
     async getEvents() {
         try {
-            let eventsData = await Database.db.event.findMany({
+            // Get all associations for the given calendar
+            const associations = await Database.db.calendarEventAssociation.findMany({
                 where: {
                     calendarId: this.id
+                },
+                include: {
+                    event: true
                 }
             });
-
-            console.log(eventsData)
-
+    
+            // Extract the events from the associations
+            const eventsData = associations.map(assoc => assoc.event);
+                
             return eventsData.map(eventData => new Event(eventData));
         } catch (error) {
             console.error(error);
+            return [];
         }
     }
+    
 
 
     static async getById(id) {
@@ -163,12 +170,22 @@ class Calendar {
                 delete calendarData.CalendarEventAssociations;
             }
     
-            return new Calendar(calendarData);
+            const calendar = new Calendar(calendarData);
+    
+            // Get child calendars and their events if any.
+            const childCalendars = await calendar.getChildCalendars();
+            for (const childCalendar of childCalendars) {
+                const childEvents = await childCalendar.getEvents();
+                calendar.events.push(...childEvents);
+            }
+    
+            return calendar;
         } catch (error) {
             console.error("Error fetching calendar by ID:", error);
             throw error; 
         }
     }
+    
     
     
     // get all calendars with filter no required
