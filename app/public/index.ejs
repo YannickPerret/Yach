@@ -37,15 +37,13 @@
     <% }); %>
   <% } %>
 
-  <h3>Shared Calendars</h3>
-  <% if (sharedCalendars.length <= 0) { %>
-    <p>Don't have shared calendars available</p>
-  <% } else { %>
-  <% sharedCalendars.forEach(function(sharedCalendar) { %>
-        <input type="checkbox" id="<%= sharedCalendar.id %>" name="calendars" value="<%= sharedCalendar.id %>">
-        <label for="<%= sharedCalendar.id %>"><%= sharedCalendar.name %></label><br>
+  <h3>Shared Calendars (Only check here)</h3>
+  <% calendars.forEach(function(calendar) { %>
+    <% if (calendar.type == 'SHARED') { %>
+      <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
+      <label for="<%= calendar.id %>"><%= calendar.name %></label><br>
+    <% } %>
   <% }); %>
-  <% } %>
   <br />
   <input type="submit" value="Submit">
 </form>
