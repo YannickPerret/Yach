@@ -136,7 +136,7 @@ class Calendar {
     
             // Extract the events from the associations
             const eventsData = associations.map(assoc => assoc.event);
-                
+
             return eventsData.map(eventData => new Event(eventData));
         } catch (error) {
             console.error(error);
@@ -176,6 +176,7 @@ class Calendar {
             const childCalendars = await calendar.getChildCalendars();
             for (const childCalendar of childCalendars) {
                 const childEvents = await childCalendar.getEvents();
+                childEvents.forEach(event => event.calendarId = childCalendar.id);
                 calendar.events.push(...childEvents);
             }
     
