@@ -106,6 +106,17 @@ class Calendar {
         });
     }
 
+    async addEvent(event) {
+        if (this.type === "SHARED") {
+          const childCalendars = await this.getChildCalendars();
+          for (const childCalendar of childCalendars) {
+            await childCalendar._associateEventWithCalendar(event.id);
+          }
+        } else {
+          await this._associateEventWithCalendar(event.id);
+        }
+      }
+
     async getEvents() {
         try {
             // Get all associations for the given calendar
@@ -207,6 +218,26 @@ class Calendar {
             console.error(error);
         }
     }
+
+    async _associateEventWithCalendar(eventId) {
+        const associationExists = await Database.db.calendarEventAssociation.findUnique({
+          where: {
+            eventId_calendarId: {
+              eventId: eventId,
+              calendarId: this.id
+            }
+          }
+        });
+    
+        if (!associationExists) {
+          await Database.db.calendarEventAssociation.create({
+            data: {
+              eventId: eventId,
+              calendarId: this.id
+            }
+          });
+        }
+      }
 }
 
 module.exports = Calendar;

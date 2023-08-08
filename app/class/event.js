@@ -19,21 +19,28 @@ class Event {
     this.calendarId = config.calendarId;
   }
 
-  formatEvent() {
-    // Ici, vous pouvez implémenter la logique pour formater l'événement
+  static async getById(id) {
+    const eventWithAssociation = await Database.db.event.findUnique({
+      where: {
+        id: id
+      },
+      include: {
+        CalendarEventAssociations: true
+      }
+    });
 
-  }
+    if (!eventWithAssociation) return null;
 
-  static async parseEvent() {
+    const event = {
+      ...eventWithAssociation,
+      calendarId: eventWithAssociation.CalendarEventAssociations[0]?.calendarId || null
+    }
 
-  }
+    return new Event(event);
+}
 
-  clearEvent() {
-    // Ici, vous pouvez implémenter la logique pour réinitialiser les propriétés de l'événement
-  }
 
   async persist() {
-
     const storedEvent = await Database.db.event.upsert({
       where: {
         id: this.id
@@ -62,6 +69,26 @@ class Event {
       url: "test",
       rRule: "test",
     };
+  }
+
+  async _associateWithCalendar(eventId) {
+    const associationExists = await Database.db.calendarEventAssociation.findUnique({
+      where: {
+        eventId_calendarId: {
+          eventId: eventId,
+          calendarId: this.calendarId
+        }
+      }
+    });
+
+    if (!associationExists) {
+      await Database.db.calendarEventAssociation.create({
+        data: {
+          eventId: eventId,
+          calendarId: this.calendarId
+        }
+      });
+    }
   }
 }
 

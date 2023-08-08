@@ -6,6 +6,12 @@ const path = require('path');
 const fs = require('fs')
 const Calendar = require('./calendar');
 const FileAdapter = require('./fileAdapter');
+const Event = require('./event');
+
+const Ical = require('./adapter/ical');
+const ICAL = require('ical.js');
+
+
 
 const fastifyMulter = require('fastify-multer')
 
@@ -82,15 +88,12 @@ class Webserver {
 
     }
 
-
-
     async getCalendarById(req, res) {
         let id = req.params.id;
 
         let calendar = await Calendar.getById(id);
-        
+
         let comp = calendar.generate()
-        console.log(comp.toString())
 
         // set the correct headers
         res.type('Content-Type', 'text/calendar');
@@ -99,7 +102,6 @@ class Webserver {
 
     async propfindCalendar(req, res) {
         let id = req.params.id;
-        let sharedCalendarData;
 
         console.log("PROPFIND request received for calendar:", id);
 
@@ -108,36 +110,66 @@ class Webserver {
         res.status(207).send();  // 207 Multi-Status is commonly used for PROPFIND responses
     }
 
+    // récupérer le calendrier via son id
+        // Parser le body  pour le transformer en object ICS component
+        // pour chaque event
+            // Tester si l'event à un attribut last-modified
+                //Si oui, Tester si l'id de l'event existe en base de données (find unique)
+                //Si oui, tester si l'attribut last-modified de l'event est supérieur à celui en base de données
+                    // Si oui, modifier l'event en base de données via son id
+                     // Si non, ne rien faire
+                // Si non, créer l'event en base de données
+            // Tester si le type de calendrier est SHARED, récupérer les calendriers enfants
+                // si oui, récupérer les calendriers enfants
+                    // pour chaque calendrier enfant, ajouter l'id du calendrier et de l'event dans la table d'association event-calendar
+                // si non, ajouter l'id du calendrier et de l'event dans la table d'association event-calendar
+
     async updateCalendar(req, reply) {
         console.log("Update calendar request received");
-
-        let id = req.params.id;
-        let newEvents = req.body;
-        let sharedCalendar;
-
-        try {
-            let calendar = await Calendar.getById(id);
-            if (calendar === null) {
-                sharedCalendar = await SharedCalendar.getById(id);
-                if (sharedCalendar === null) {
-                    return reply.status(404).send({ error: 'No calendar found' });
-                }
-                else {
-                    for (let calendar of sharedCalendar.calendars) {
-                        console.debug(calendar.getEvents())
-
-                    }
-                }
-            }
-
-
-
-
-            reply.status(200).send(calendar);
-        } catch (error) {
-            console.error(error);
-            reply.status(500).send({ error: 'Server error' });
+        
+        let calendarId = req.params.id;
+        let newListEvents = req.body;
+    
+        // Get the calendar by its id
+        const calendar = await Calendar.getById(calendarId);
+    
+        if (!calendar) {
+            return reply.status(404).send({ error: 'Calendar not found' });
         }
+    
+        // Parse the body to transform it into ICS component
+        let jcalData = Ical.parse(newListEvents);
+        let comp = Ical.component(jcalData);
+    
+        // Iterate over events in the parsed data
+        for (let event of comp.getAllSubcomponents('vevent')) {
+            let uid = event.getFirstPropertyValue('uid');
+    
+            // Check if the event has a last-modified attribute
+            const existingEvent = await Event.getById(uid);
+    
+            if (existingEvent) {
+                existingEvent.summary = event.getFirstPropertyValue('summary');
+                existingEvent.start = event.getFirstPropertyValue('dtstart').toJSDate();
+                existingEvent.end = event.getFirstPropertyValue('dtend').toJSDate();
+    
+                await existingEvent.persist();
+            } else {
+                let newEvent = new Event({
+                    id: event.getFirstPropertyValue('uid'),
+                    start: event.getFirstPropertyValue('dtstart').toJSDate(),
+                    end: event.getFirstPropertyValue('dtend').toJSDate(),
+                    summary: event.getFirstPropertyValue('summary'),
+                    transp: event.getFirstPropertyValue('transp'),
+                    calendarId: calendarId  // Ajoutez cette ligne
+                });
+    
+                await newEvent.persist();
+                await calendar.addEvent(newEvent);
+            }
+        }
+    
+        reply.send({ message: 'Calendar updated successfully' });
     }
 
     async submitCalendar(req, reply) {
@@ -204,11 +236,8 @@ class Webserver {
         reply.send({ url: `${process.env.ENDPOINT_URL}:${process.env.ENDPOINT_PORT}/api/v1/calendar/${outputCalendar.id}` });
     }
 
-
     async getHome(req, reply) {
-
         let calendars = await Calendar.getAll();
-
         return reply.status(200).view('index.ejs', {
             title: 'Home Page',
             calendars: calendars,
