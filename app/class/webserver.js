@@ -5,7 +5,6 @@ const routes = require('./router');
 const path = require('path');
 const fs = require('fs')
 const Calendar = require('./calendar');
-const SharedCalendar = require('./sharedCalendar');
 const FileAdapter = require('./fileAdapter');
 
 const fastifyMulter = require('fastify-multer')
@@ -83,19 +82,15 @@ class Webserver {
 
     }
 
+
+
     async getCalendarById(req, res) {
         let id = req.params.id;
-        let sharedCalendarData
 
-        let calendarData = await Calendar.getById(id);
-
-        if (calendarData === null) {
-            sharedCalendarData = await SharedCalendar.getById(id);
-            if (sharedCalendarData === null) {
-                return res.status(404).send({ error: 'No calendar found' });
-            }
-        }
-        let comp = calendarData !== null ? calendarData.generate() : sharedCalendarData.generate();
+        let calendar = await Calendar.getById(id);
+        
+        let comp = calendar.generate()
+        console.log(comp.toString())
 
         // set the correct headers
         res.type('Content-Type', 'text/calendar');
@@ -208,10 +203,10 @@ class Webserver {
 
         reply.send({ url: `${process.env.ENDPOINT_URL}:${process.env.ENDPOINT_PORT}/api/v1/calendar/${outputCalendar.id}` });
     }
-    // Static views home 
+
+
     async getHome(req, reply) {
 
-        //get all calendar by database Calendar
         let calendars = await Calendar.getAll();
 
         return reply.status(200).view('index.ejs', {
