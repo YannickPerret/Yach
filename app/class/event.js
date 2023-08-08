@@ -19,13 +19,13 @@ class Event {
     this.calendarId = config.calendarId;
   }
 
-  formatEvent(event) {
+  formatEvent() {
     // Ici, vous pouvez implémenter la logique pour formater l'événement
 
   }
 
-  parseEvent(event) {
-    // Ici, vous pouvez implémenter la logique pour analyser l'événement
+  static async parseEvent() {
+
   }
 
   clearEvent() {
@@ -33,29 +33,14 @@ class Event {
   }
 
   async persist() {
-    let storedEvent;
 
-    // find if event exist before create
-    const event = await Database.db.event.findUnique({
+    const storedEvent = await Database.db.event.upsert({
       where: {
         id: this.id
-      }
+      },
+      update: this._eventData(),
+      create: this._eventData()
     });
-
-    if (event) {
-      // update event
-      storedEvent = await Database.db.event.update({
-        where: {
-          id: this.id
-        },
-        data: this._eventData()
-      });
-    }
-    else {
-      storedEvent = await Database.db.event.create({
-        data: this._eventData()
-      });
-    }
 
     await this._associateWithCalendar(storedEvent.id);
   }
@@ -78,27 +63,6 @@ class Event {
       rRule: "test",
     };
   }
-
-  async _associateWithCalendar(eventId) {
-    const associationExists = await Database.db.calendarEventAssociation.findUnique({
-      where: {
-        eventId_calendarId: {
-          eventId: eventId,
-          calendarId: this.calendarId
-        }
-      }
-    });
-
-    if (!associationExists) {
-      await Database.db.calendarEventAssociation.create({
-        data: {
-          eventId: eventId,
-          calendarId: this.calendarId
-        }
-      });
-    }
-  }
 }
-
 
 module.exports = Event;

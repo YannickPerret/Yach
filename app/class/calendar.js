@@ -88,39 +88,23 @@ class Calendar {
     }
 
     async persist() {
-        // find if calendar exist before create
-        const calendar = await Database.db.calendar.findUnique({
+        await Database.db.calendar.upsert({
             where: {
                 id: this.id
+            },
+            update: {
+                name: this.name,
+                type: this.type,
+                parentCalendarId: this.parentCalendarId 
+            },
+            create: {
+                id: this.id,
+                name: this.name,
+                type: this.type,
+                parentCalendarId: this.parentCalendarId
             }
         });
-
-        if (calendar) {
-            // update calendar
-            await Database.db.calendar.update({
-                where: {
-                    id: this.id
-                },
-                data: {
-                    name: this.name,
-                    type: this.type,
-                    parentCalendarId: this.parentCalendarId 
-                }
-            });
-            console.log("calendar updated")
-        } else {
-            await Database.db.calendar.create({
-                data: {
-                    id: this.id,
-                    name: this.name,
-                    type: this.type,
-                    parentCalendarId: this.parentCalendarId
-                }
-            });
-            console.log("calendar persisted")
-        }
     }
-
 
     async getEvents() {
         try {
@@ -143,8 +127,22 @@ class Calendar {
             return [];
         }
     }
-    
 
+    async updateEvents() {
+        for (let event of this.events) {
+            await Database.db.event.delete({
+                where: {
+                    id: event.id
+                }
+            });
+        }
+    
+        for (let event of this.events) {
+            await event.persist();
+        }
+    
+        console.log("Events updated for calendar with id:", this.id);
+    }
 
     static async getById(id) {
         try {
@@ -186,8 +184,6 @@ class Calendar {
             throw error; 
         }
     }
-    
-    
     
     // get all calendars with filter no required
     static async getAll(filter = null) {
