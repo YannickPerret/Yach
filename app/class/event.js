@@ -49,7 +49,8 @@ class Event {
       create: this._eventData()
     });
 
-    await this._associateWithCalendar(storedEvent.id);
+
+    //await this._associateWithCalendar(storedEvent.id);
   }
 
   _eventData() {
