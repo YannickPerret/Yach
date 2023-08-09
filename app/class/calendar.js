@@ -126,7 +126,8 @@ class Calendar {
                 },
                 include: {
                     event: true
-                }
+                },
+                distinct: ['eventId']
             });
     
             // Extract the events from the associations
@@ -196,7 +197,6 @@ class Calendar {
         }
     }
     
-    // get all calendars with filter no required
     static async getAll(filter = null) {
         try {
             let calendarsData 
@@ -218,6 +218,8 @@ class Calendar {
             console.error(error);
         }
     }
+
+    // PRIVATE METHOD
 
     async _associateEventWithCalendar(eventId) {
         const associationExists = await Database.db.calendarEventAssociation.findUnique({
