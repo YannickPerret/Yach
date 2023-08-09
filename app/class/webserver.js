@@ -9,9 +9,6 @@ const FileAdapter = require('./fileAdapter');
 const Event = require('./event');
 
 const Ical = require('./adapter/ical');
-const ICAL = require('ical.js');
-
-
 
 const fastifyMulter = require('fastify-multer')
 
@@ -143,6 +140,7 @@ class Webserver {
     
         // Iterate over events in the parsed data
         for (let event of comp.getAllSubcomponents('vevent')) {
+
             let uid = event.getFirstPropertyValue('uid');
     
             // Check if the event has a last-modified attribute
@@ -154,6 +152,7 @@ class Webserver {
                 existingEvent.end = event.getFirstPropertyValue('dtend').toJSDate();
     
                 await existingEvent.persist();
+                
             } else {
                 let newEvent = new Event({
                     id: event.getFirstPropertyValue('uid'),
@@ -161,10 +160,11 @@ class Webserver {
                     end: event.getFirstPropertyValue('dtend').toJSDate(),
                     summary: event.getFirstPropertyValue('summary'),
                     transp: event.getFirstPropertyValue('transp'),
-                    calendarId: calendarId  // Ajoutez cette ligne
+                    calendarId: calendarId
                 });
     
                 await newEvent.persist();
+
                 await calendar.addEvent(newEvent);
             }
         }
