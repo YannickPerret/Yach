@@ -219,6 +219,31 @@ class Calendar {
         }
     }
 
+    // NEW FOR MIGRATION 
+    generatePropfindResponseXML() {
+        const xmlContent = `
+            <?xml version="1.0" encoding="UTF-8"?>
+            <D:multistatus xmlns:D="DAV:">
+                <D:response>
+                    <D:href>/calendars/${this.id}/</D:href>
+                    <D:propstat>
+                        <D:prop>
+                            <D:resourcetype>
+                                <C:calendar xmlns:C="urn:ietf:params:xml:ns:caldav"/>
+                            </D:resourcetype>
+                            <D:displayname>${this.name}</D:displayname>
+                        </D:prop>
+                        <D:status>HTTP/1.1 200 OK</D:status>
+                    </D:propstat>
+                </D:response>
+            </D:multistatus>
+        `;
+    
+        return xmlContent;
+    }
+
+
+
     // PRIVATE METHOD
 
     async _associateEventWithCalendar(eventId) {

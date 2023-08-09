@@ -80,9 +80,10 @@ class Webserver {
         }
     }
 
-    // Methodes
-    getCalendars(req, res) {
+    async getCalendars(req, reply) {
+        let calendars = await Calendar.getAll();
 
+        reply.send(calendars);
     }
 
     async getCalendarById(req, res) {
@@ -96,30 +97,6 @@ class Webserver {
         res.type('Content-Type', 'text/calendar');
         res.status(200).send(comp.toString());
     }
-
-    async propfindCalendar(req, res) {
-        let id = req.params.id;
-
-        console.log("PROPFIND request received for calendar:", id);
-
-        // set the correct headers
-        res.type('Content-Type', 'text/calendar');
-        res.status(207).send();  // 207 Multi-Status is commonly used for PROPFIND responses
-    }
-
-    // récupérer le calendrier via son id
-        // Parser le body  pour le transformer en object ICS component
-        // pour chaque event
-            // Tester si l'event à un attribut last-modified
-                //Si oui, Tester si l'id de l'event existe en base de données (find unique)
-                //Si oui, tester si l'attribut last-modified de l'event est supérieur à celui en base de données
-                    // Si oui, modifier l'event en base de données via son id
-                     // Si non, ne rien faire
-                // Si non, créer l'event en base de données
-            // Tester si le type de calendrier est SHARED, récupérer les calendriers enfants
-                // si oui, récupérer les calendriers enfants
-                    // pour chaque calendrier enfant, ajouter l'id du calendrier et de l'event dans la table d'association event-calendar
-                // si non, ajouter l'id du calendrier et de l'event dans la table d'association event-calendar
 
     async updateCalendar(req, reply) {
         console.log("Update calendar request received");
@@ -235,6 +212,53 @@ class Webserver {
 
         reply.send({ url: `${process.env.ENDPOINT_URL}:${process.env.ENDPOINT_PORT}/api/v1/calendar/${outputCalendar.id}` });
     }
+
+    // NEW FOR MIGRATION 
+    async createCalendar(req, reply) {
+        // Parse le corps XML pour extraire les informations du calendrier
+        let calendarProps = parseXML(req.body);
+        
+        const newCalendar = new Calendar({
+            name: calendarProps.name || "Default",
+            type: calendarProps.type || "OTHER",
+            // ... Autres propriétés
+        });
+        
+        await newCalendar.persist();
+        
+        // Renvoyer une réponse avec le code 201 pour indiquer que le calendrier a été créé avec succès
+        reply.status(201).send();
+    }
+
+    async propfindCalendar(req, res) {
+        let id = req.params.id;
+    
+        console.log("PROPFIND request received for calendar:", id);
+    
+        const calendar = await Calendar.getById(id);
+    
+        if (!calendar) {
+            return res.status(404).send();
+        }
+        // Générer la réponse XML en fonction des propriétés demandées
+        const responseXML = generatePropfindResponseXML(calendar);
+    
+        // Renvoyer la réponse XML
+        res.type('application/xml').status(207).send(responseXML);
+    }
+    
+    async reportCalendar(req, res) {
+    }
+
+    async putEvent(req, res) {
+    }
+
+    async deleteEvent(req, res) {
+    }
+
+    async getEvent(req, res) {
+    }
+
 
     async getHome(req, reply) {
         let calendars = await Calendar.getAll();

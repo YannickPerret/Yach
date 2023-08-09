@@ -34,12 +34,15 @@ model Event {
   rRule       String?
   start       String
   end         String
-  drStamp     String
+  dtStamp     DateTime                     @default(now())
   categories  String?
   location    String?
   geo         String?
   description String?
   url         String?
+  exDate      String?                      
+  rDate       String?                     
+  alarms      Alarm[] 
   CalendarEventAssociations CalendarEventAssociation[]
 
   @@index([id])
@@ -52,4 +55,12 @@ model CalendarEventAssociation {
   calendar   Calendar  @relation(fields: [calendarId], references: [id])
 
   @@id([eventId, calendarId])
+}
+
+model Alarm {
+  id       String    @id @default(uuid())
+  eventId  String
+  event    Event     @relation(fields: [eventId], references: [id])
+  trigger  String    // spécifie quand l'alarme doit se déclencher
+  action   String    // type d'alarme (e.g., "DISPLAY" pour un rappel, "EMAIL" pour un email)
 }

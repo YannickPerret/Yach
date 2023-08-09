@@ -5,6 +5,8 @@
   </head>
 <body>
 
+<button id="createNewCalendar">Create new Calendar</button>
+
 <form action="/api/v1/calendar" method="post" enctype="multipart/form-data">
   <h2>Create a new Calendar</h2>
   <label>Upload calendar : </label><input type="file" name="file" id="file" /><br>
@@ -49,4 +51,31 @@
 </form>
 
 </body>
+
+<script>
+  document.getElementById('createNewCalendar').addEventListener('click', function() {
+    // Assurez-vous de définir l'URL et les données correctement
+    const url = 'http://localhost:3000/api/v1/calendar/new';
+    const data = {
+      // Vos données ici (par exemple, le nom du calendrier, le type, etc.)
+
+    };
+
+    fetch(url, {
+      method: 'MKCALENDAR',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log(data);
+      // Gérez la réponse ici (par exemple, rafraîchissez la page, montrez un message, etc.)
+    })
+    .catch(error => {
+      console.error('There was an error!', error);
+    });
+  });
+</script>
 </html>

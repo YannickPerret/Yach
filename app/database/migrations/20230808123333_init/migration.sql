@@ -4,23 +4,8 @@ CREATE TABLE "Calendar" (
     "name" TEXT,
     "type" TEXT NOT NULL DEFAULT 'OTHER',
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
-);
-
--- CreateTable
-CREATE TABLE "SharedCalendar" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "name" TEXT,
-    "type" TEXT NOT NULL DEFAULT 'OTHER',
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL
-);
-
--- CreateTable
-CREATE TABLE "SharedCalendarAssociation" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "sharedCalendarId" TEXT NOT NULL,
-    "calendarId" TEXT NOT NULL
+    "updatedAt" DATETIME NOT NULL,
+    "parent_calendar_id" TEXT
 );
 
 -- CreateTable
@@ -31,7 +16,7 @@ CREATE TABLE "Event" (
     "summary" TEXT NOT NULL,
     "sequence" INTEGER,
     "status" TEXT,
-    "transp" TEXT,
+    "transp" TEXT NOT NULL,
     "rRule" TEXT,
     "start" TEXT NOT NULL,
     "end" TEXT NOT NULL,
@@ -53,9 +38,6 @@ CREATE TABLE "CalendarEventAssociation" (
 
 -- CreateIndex
 CREATE INDEX "Calendar_id_idx" ON "Calendar"("id");
-
--- CreateIndex
-CREATE INDEX "idx_sharedCalendarId" ON "SharedCalendarAssociation"("sharedCalendarId");
 
 -- CreateIndex
 CREATE INDEX "Event_id_idx" ON "Event"("id");
