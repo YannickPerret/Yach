@@ -1,0 +1,43 @@
+{
+    "name": "Mon Calendrier",
+    "short_name": "Calendrier",
+    "description": "Une application de calendrier PWA",
+    "start_url": "/",
+    "scope": "/calendars/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#000000",
+    "service_worker": "./sw.js",
+    "icons": [
+        {
+            "src": "./images/icons/Icons8-Ios7-Science-Test-Tube.48.png",
+            "sizes": "48x48",
+            "type": "image/png"
+        },
+        {
+            "src": "./images/icons/Icons8-Ios7-Science-Test-Tube.72.png",
+            "sizes": "72x72",
+            "type": "image/png"
+        },
+        {
+            "src": "./images/icons/Icons8-Ios7-Science-Test-Tube.96.png",
+            "sizes": "96x96",
+            "type": "image/png"
+        },
+        {
+            "src": "./images/icons/Icons8-Ios7-Science-Test-Tube.128.png",
+            "sizes": "128x128",
+            "type": "image/png"
+        },
+        {
+            "src": "./images/icons/Icons8-Ios7-Science-Test-Tube.256.png",
+            "sizes": "256x256",
+            "type": "image/png"
+        },
+        {
+            "src": "./images/icons/Icons8-Ios7-Science-Test-Tube.512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

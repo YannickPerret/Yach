@@ -12,6 +12,9 @@ const Ical = require('./adapter/ical');
 
 const fastifyMulter = require('fastify-multer')
 
+const cert = fs.readFileSync(path.join(__dirname, '../certs/cert.pem'));
+const key = fs.readFileSync(path.join(__dirname, '../certs/key.pem'));
+
 // Configure multer storage
 const storage = fastifyMulter.diskStorage({
     destination: function (req, file, cb) {
@@ -31,7 +34,7 @@ const upload = fastifyMulter({ storage: storage })
 
 class Webserver {
     constructor(config) {
-        this.app = Fastify({ logger: true });
+        this.app = Fastify({ logger: false, https: { key, cert } });
         this.port = config.port;
         this.fileConfig = config.fileConfig;
 
@@ -70,15 +73,18 @@ class Webserver {
 
     async start() {
         try {
-            await this.app.listen({ port: this.port }, () => {
-                console.log(`WEB SERVER : Server listening on port ${this.port}`);
+            await this.app.listen({
+                port: this.port,
+                host: '0.0.0.0'
             });
+            console.log(`WEB SERVER : Server listening on port ${this.port}`);
         }
         catch (err) {
-            this.app.log.error(err)
-            process.exit(1)
+            this.app.log.error(err);
+            process.exit(1);
         }
     }
+    
 
     // Methodes
     getCalendars(req, res) {
@@ -107,25 +113,13 @@ class Webserver {
         res.status(207).send();  // 207 Multi-Status is commonly used for PROPFIND responses
     }
 
-    // récupérer le calendrier via son id
-        // Parser le body  pour le transformer en object ICS component
-        // pour chaque event
-            // Tester si l'event à un attribut last-modified
-                //Si oui, Tester si l'id de l'event existe en base de données (find unique)
-                //Si oui, tester si l'attribut last-modified de l'event est supérieur à celui en base de données
-                    // Si oui, modifier l'event en base de données via son id
-                     // Si non, ne rien faire
-                // Si non, créer l'event en base de données
-            // Tester si le type de calendrier est SHARED, récupérer les calendriers enfants
-                // si oui, récupérer les calendriers enfants
-                    // pour chaque calendrier enfant, ajouter l'id du calendrier et de l'event dans la table d'association event-calendar
-                // si non, ajouter l'id du calendrier et de l'event dans la table d'association event-calendar
-
     async updateCalendar(req, reply) {
         console.log("Update calendar request received");
         
         let calendarId = req.params.id;
-        let newListEvents = req.body;
+        let eventData = req.body;
+
+        console.log("Calendar ID:", calendarId);
     
         // Get the calendar by its id
         const calendar = await Calendar.getById(calendarId);
@@ -134,43 +128,60 @@ class Webserver {
             return reply.status(404).send({ error: 'Calendar not found' });
         }
     
-        // Parse the body to transform it into ICS component
-        let jcalData = Ical.parse(newListEvents);
-        let comp = Ical.component(jcalData);
-    
-        // Iterate over events in the parsed data
-        for (let event of comp.getAllSubcomponents('vevent')) {
-
-            let uid = event.getFirstPropertyValue('uid');
-    
-            // Check if the event has a last-modified attribute
-            const existingEvent = await Event.getById(uid);
-    
+        if (typeof eventData === 'string' && eventData.startsWith("BEGIN:VCALENDAR")) {
+            // Handle ICS data
+            let jcalData = Ical.parse(eventData);
+            let comp = Ical.component(jcalData);
+        
+            for (let event of comp.getAllSubcomponents('vevent')) {
+                let uid = event.getFirstPropertyValue('uid');
+                const existingEvent = await Event.getById(uid);
+            
+                if (existingEvent) {
+                    existingEvent.summary = event.getFirstPropertyValue('summary');
+                    existingEvent.start = event.getFirstPropertyValue('dtstart').toJSDate();
+                    existingEvent.end = event.getFirstPropertyValue('dtend').toJSDate();
+                    await existingEvent.persist();
+                } else {
+                    let newEvent = new Event({
+                        id: event.getFirstPropertyValue('uid'),
+                        start: event.getFirstPropertyValue('dtstart').toJSDate(),
+                        end: event.getFirstPropertyValue('dtend').toJSDate(),
+                        summary: event.getFirstPropertyValue('summary'),
+                        transp: event.getFirstPropertyValue('transp'),
+                        calendarId: calendarId
+                    });
+                    await newEvent.persist();
+                    await calendar.addEvent(newEvent);
+                }
+            }
+        } else if (eventData.id && eventData.start && eventData.end && eventData.summary) {
+            // Handle JSON data
+            const existingEvent = await Event.getById(eventData.id);
             if (existingEvent) {
-                existingEvent.summary = event.getFirstPropertyValue('summary');
-                existingEvent.start = event.getFirstPropertyValue('dtstart').toJSDate();
-                existingEvent.end = event.getFirstPropertyValue('dtend').toJSDate();
-    
+                existingEvent.summary = eventData.summary;
+                existingEvent.start = new Date(eventData.start);
+                existingEvent.end = new Date(eventData.end);
                 await existingEvent.persist();
-                
             } else {
+                // Handle scenario where event doesn't exist yet (if needed)
                 let newEvent = new Event({
-                    id: event.getFirstPropertyValue('uid'),
-                    start: event.getFirstPropertyValue('dtstart').toJSDate(),
-                    end: event.getFirstPropertyValue('dtend').toJSDate(),
-                    summary: event.getFirstPropertyValue('summary'),
-                    transp: event.getFirstPropertyValue('transp'),
+                    id: eventData.id,
+                    start: new Date(eventData.start),
+                    end: new Date(eventData.end),
+                    summary: eventData.summary,
                     calendarId: calendarId
                 });
-    
                 await newEvent.persist();
-
                 await calendar.addEvent(newEvent);
             }
+        } else {
+            return reply.status(400).send({ error: 'Invalid data format' });
         }
-    
+        
         reply.send({ message: 'Calendar updated successfully' });
     }
+    
 
     async submitCalendar(req, reply) {
         const data = req.file;
@@ -241,6 +252,21 @@ class Webserver {
         return reply.status(200).view('index.ejs', {
             title: 'Home Page',
             calendars: calendars,
+        });
+    }
+
+    async getWebCalendarById(req, reply) {
+        let id = req.params.id;
+
+        let calendar = await Calendar.getById(id);
+
+        if (!calendar) {
+            return reply.status(404).send({ error: 'Calendar not found' });
+        }
+
+        return reply.status(200).view('calendar.ejs', {
+            title: 'Calendar Page',
+            calendar: calendar,
         });
     }
 }

@@ -50,7 +50,7 @@ class Event {
     });
 
 
-    //await this._associateWithCalendar(storedEvent.id);
+    await this._associateWithCalendar(storedEvent.id);
   }
 
   _eventData() {
