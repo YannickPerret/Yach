@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+
+    <style>
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100vh;
+            overflow-y: hidden;
+        }
+
+        /* Sidebar styles */
+        .sidebar {
+            position: relative;
+            width: 15%;
+            background-color: #f7f7f7;
+            padding: 20px;
+            border-right: 1px solid #ddd;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-header {
+            height: 4%;
+        }
+
+        #toggleSidebar {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+
+        .sidebar-collapsed {
+            width: 50px !important;
+            overflow: hidden;
+        }
+
+        #createCalendarBtn {
+            display: block;
+            background-color: #4285f4;
+            color: #fff;
+            border: none;
+            padding: 10px 20px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        #createCalendarBtn:hover {
+            background-color: #357ab8;
+        }
+
+        .sidebar.hide-content .sidebar-content {
+            display: none;
+        }
+
+
+        /* Calendar styles */
+
+
+        .calendar-container {
+            width: 85%;
+            overflow-y: auto;
+            height: calc(100vh - 60px);
+            padding-left: 10px;
+        }
+
+        #calendar {
+            max-width: 100%;
+            margin: 0 auto;
+        }
+
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 40%;
+            /* ajustez selon vos besoins */
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            font-size: 18px;
+        }
+
+        .modal-content label {
+            display: block;
+            margin-bottom: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-content input[type="text"],
+        .modal-content input[type="datetime-local"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        .modal-content input[type="submit"] {
+            padding: 10px 20px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+
+        .modal-content input[type="submit"]:hover {
+            background-color: #357ab8;
+        }
+
+
+        .close-btn {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close-btn:hover,
+        .close-btn:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <button id="toggleSidebar">☰</button>
+            </div>
+            <div class="sidebar-content">
+                <button id="createCalendarBtn">Créer un calendrier</button>
+
+                <div id="miniCalendar"></div>
+
+
+                <h3>My Calendars</h3>
+                <!-- Ici, vous pouvez insérer la liste des calendriers de l'utilisateur -->
+                <ul id="userCalendars">
+                    <!-- Les éléments de liste (li) représentant chaque calendrier seront insérés ici -->
+                </ul>
+            </div>
+        </div>
+        <div class="calendar-container">
+            <div id="calendar-nav">
+                <button onclick="changeView('dayGridMonth')">Month</button>
+                <button onclick="changeView('timeGridWeek')">Week</button>
+                <button onclick="changeView('timeGridDay')">Day</button>
+            </div>
+
+            <div id='calendar'></div>
+        </div>
+    </div>
+
+
+
+    <div class="modal" id="eventModal">
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModal()">&times;</span>
+            <h2>Edit Event</h2>
+            <form id="eventForm">
+                <input type="hidden" id="eventId" name="eventId">
+                <label for="summary">Summary:</label>
+                <input type="text" id="summary" name="summary">
+                <label for="startDate">Start Date:</label>
+                <input type="datetime-local" id="startDate" name="startDate">
+                <label for="endDate">End Date:</label>
+                <input type="datetime-local" id="endDate" name="endDate">
+                <input type="submit" value="Update Event">
+            </form>
+        </div>
+    </div>
+
+</body>
+
+
+<script>
+    let calendar
+    let clickTimer = null;
+    const DOUBLE_CLICK_DELAY = 300;
+
+    function changeView(viewName) {
+        calendar.changeView(viewName);
+    }
+
+
+    function formatDateToDatetimeLocal(date) {
+        const tzo = -date.getTimezoneOffset(),
+            dif = tzo >= 0 ? '+' : '-',
+            pad = function (num) {
+                const norm = Math.floor(Math.abs(num));
+                return (norm < 10 ? '0' : '') + norm;
+            };
+        return date.getFullYear() +
+            '-' + pad(date.getMonth() + 1) +
+            '-' + pad(date.getDate()) +
+            'T' + pad(date.getHours()) +
+            ':' + pad(date.getMinutes());
+    }
+
+    function loadUserCalendars() {
+        // Remplacez ceci par un appel réel à votre backend ou à votre base de données
+        const mockCalendars = [
+            { id: '1', name: 'Work' },
+            { id: '2', name: 'Personal' },
+        ];
+
+        const calendarList = document.getElementById('userCalendars');
+        mockCalendars.forEach(calendar => {
+            const li = document.createElement('li');
+            li.textContent = calendar.name;
+            calendarList.appendChild(li);
+        });
+    }
+
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const events = <%- JSON.stringify(calendar.events) %>;
+
+
+
+        document.getElementById('createCalendarBtn').addEventListener('click', function () {
+
+        });
+
+
+        document.getElementById('toggleSidebar').addEventListener('click', function () {
+            const sidebar = document.querySelector('.sidebar');
+            const calendarContainer = document.querySelector('.calendar-container');
+
+            if (sidebar.classList.contains('sidebar-collapsed')) {
+                sidebar.classList.remove('sidebar-collapsed');
+                sidebar.classList.remove('hide-content'); // montrer le contenu
+                calendarContainer.style.width = '80%';
+            } else {
+                sidebar.classList.add('sidebar-collapsed');
+                sidebar.classList.add('hide-content'); // masquer le contenu
+                calendarContainer.style.width = 'calc(100% - 50px)';
+            }
+        });
+
+        // Initialiser le calendrier
+        let calendarEl = document.getElementById('calendar')
+        calendar = new FullCalendar.Calendar(calendarEl, {
+            height: 'auto',
+            initialView: 'dayGridMonth',
+            editable: true,
+            selectable: true,
+            timeZone: 'Europe/Zurich',
+            firstDay: 1,
+            eventClick: function (info) {
+                openModal(info.event);
+            },
+            eventDrop: async function (info) {
+                try {
+                    const eventId = info.event.id;
+                    const updatedData = {
+                        id: eventId,
+                        start: info.event.start.toISOString(),
+                        end: info.event.end.toISOString(),
+                        summary: info.event.title
+                    };
+
+                    const response = await fetch(`/api/v1/calendar/${eventId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(updatedData)
+                    });
+
+                    const data = await response.json();
+
+                    if (response.status !== 200) {
+                        console.error(data.error);
+                        // Vous pourriez aussi vouloir remettre l'événement à sa position d'origine
+                        // info.revert();
+                    }
+                } catch (err) {
+                    console.error('Erreur lors de la mise à jour de l\'événement', err);
+                }
+            },
+            dateClick: function (info) {
+                if (clickTimer === null) {
+                    clickTimer = setTimeout(function () {
+                        clickTimer = null;
+                        // Ici, vous pouvez gérer le clic simple si nécessaire
+                    }, DOUBLE_CLICK_DELAY);
+                } else {
+                    clearTimeout(clickTimer);
+                    clickTimer = null;
+                    const selectedDate = info.dateStr;
+                    openModal(selectedDate);
+                }
+            },
+            events: events.map(event => ({
+                id: event.id,
+                title: event.summary,
+                start: event.start,
+                end: event.end,
+            }))
+        });
+
+        calendar.render();
+
+        loadUserCalendars();
+    });
+
+    function openModal(eventOrDate) {
+        const eventIdInput = document.getElementById('eventId');
+        const modal = document.getElementById('eventModal');
+        const summaryInput = document.getElementById('summary');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+
+        if (eventOrDate instanceof Date || typeof eventOrDate === 'string') {
+            summaryInput.value = "";
+            startDateInput.value = formatDateToDatetimeLocal(new Date(eventOrDate));
+            endDateInput.value = formatDateToDatetimeLocal(new Date(eventOrDate));
+        } else { // Si c'est un événement existant
+            console.log(eventOrDate.start, eventOrDate.end);
+            eventIdInput.value = eventOrDate.id;
+            summaryInput.value = eventOrDate.title;
+            startDateInput.value = formatDateToDatetimeLocal(eventOrDate.start);
+            endDateInput.value = formatDateToDatetimeLocal(eventOrDate.end);
+        }
+
+        modal.style.display = 'block';
+    }
+
+
+    function closeModal() {
+        const modal = document.getElementById('eventModal');
+        modal.style.display = 'none';
+    }
+
+</script>
+
+</html>
