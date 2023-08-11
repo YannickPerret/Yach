@@ -18,4 +18,5 @@ module.exports = (app, handlers, upload) => {
 
   app.get('/', handlers.getHome);
   app.get('/calendar/:id', handlers.getWebCalendarById);
+  app.get('/calendar', handlers.getWebCalendarById);
 };
