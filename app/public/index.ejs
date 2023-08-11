@@ -28,7 +28,7 @@
     <% calendars.forEach(function(calendar) { %>
         <% if (calendar.type == 'PERSONAL') { %>
           <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
-          <label for="<%= calendar.id %>"><%= calendar.name %></label><br>
+          <label for="<%= calendar.id %>"><a href="/calendar/<%= calendar.id %>"><%= calendar.name %></a></label><br>
         <% } %>
     <% }); %>
 
@@ -36,7 +36,7 @@
     <% calendars.forEach(function(calendar) { %>
         <% if (calendar.type == 'PROFESSIONAL') { %>
           <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
-          <label for="<%= calendar.id %>"><%= calendar.name %></label><br>
+          <label for="<%= calendar.id %>"><a href="/calendar/<%= calendar.id %>"><%= calendar.name %></a></label><br>
         <% } %>
     <% }); %>
   <% } %>
@@ -45,7 +45,7 @@
   <% calendars.forEach(function(calendar) { %>
     <% if (calendar.type == 'SHARED') { %>
       <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
-      <label for="<%= calendar.id %>"><%= calendar.name %></label><br>
+      <label for="<%= calendar.id %>"><a href="/calendar/<%= calendar.id %>"><%= calendar.name %></a></label><br>
     <% } %>
   <% }); %>
   <br />

@@ -191,7 +191,7 @@
                 <button id="toggleSidebar">☰</button>
             </div>
             <div class="sidebar-content">
-                <button id="createCalendarBtn">Créer un calendrier</button>
+                <a href="/"><button id="createCalendarBtn">Créer un calendrier</button></a>
                 <div id="miniCalendar"></div>
                 <h3>My Calendars</h3>
                 <ul id="userCalendars">
@@ -261,6 +261,10 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         calendarData = <%- JSON.stringify(calendar) %>;
+
+        if (Array.isArray(calendarData) && calendarData.length === 0) {
+         calendarData = { events: [], id: null }; // Default structure
+        }
         events = calendarData.events;
 
         fullCalendar = initializeCalendar(events, calendarData.id);
@@ -279,6 +283,12 @@
         const startDateInput = document.getElementById('startDate').value;
         const endDateInput = document.getElementById('endDate').value;
         const descriptionInput = document.getElementById('description').value;
+
+        if (new Date(startDateInput) >= new Date(endDateInput)) {
+            alert("La date de début doit être inférieure à la date de fin !");
+            return;
+        }
+
 
         if (doesEventOverlap(startDateInput, endDateInput)) {
             alert("Un événement existe déjà pour cette plage horaire!");
@@ -307,7 +317,6 @@
         }
         return result;
     }
-
 
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
@@ -354,6 +363,35 @@
         }
     };
 
+    const updateEvent = async (info) => {
+        try {
+                    const updatedData = {
+                        id: info.event.id,
+                        start: info.event.start.toISOString(),
+                        end: info.event.end.toISOString(),
+                        summary: info.event.title,
+                        description: info.event.description
+                    };
+
+                    const response = await fetch(`/api/v1/calendar/${info.event.extendedProps.calendarId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(updatedData)
+                    });
+
+                    const data = await response.json();
+
+                    if (response.status !== 200) {
+                        console.error(data.error);
+                        info.revert();
+                    }
+                } catch (err) {
+                    console.error('Erreur lors de la mise à jour de l\'événement', err);
+                }
+    }
+
     const submitEvent = async (event) => {
         const eventForm = document.getElementById('eventForm').value;
         const idInput = document.getElementById('eventId').value;
@@ -398,6 +436,7 @@
         const descriptionInput = document.getElementById('description');
         const eventForm = document.getElementById('eventForm');
 
+
         if (eventOrDate instanceof Date || typeof eventOrDate === 'string') {
             summaryInput.value = "";
             startDateInput.value = formatDateToDatetimeLocal(new Date(eventOrDate));
@@ -426,40 +465,13 @@
         const calendarEl = document.getElementById('calendar');
         const fullCalendar = new FullCalendar.Calendar(calendarEl, {
             height: 'auto',
-            initialView: 'dayGridMonth',
+            initialView: 'timeGridWeek',
             editable: true,
             selectable: true,
             timeZone: 'Europe/Zurich',
             firstDay: 1,
             eventClick: info => openModal(info.event),
-            eventDrop: async info => {
-                try {
-                    const updatedData = {
-                        id: info.event.id,
-                        start: info.event.start.toISOString(),
-                        end: info.event.end.toISOString(),
-                        summary: info.event.title,
-                        description: info.event.description
-                    };
-
-                    const response = await fetch(`/api/v1/calendar/${info.event.extendedProps.calendarId}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(updatedData)
-                    });
-
-                    const data = await response.json();
-
-                    if (response.status !== 200) {
-                        console.error(data.error);
-                        info.revert();
-                    }
-                } catch (err) {
-                    console.error('Erreur lors de la mise à jour de l\'événement', err);
-                }
-            },
+            eventDrop: info => updateEvent(info),
             dateClick: info => {
                 if (clickTimer === null) {
                     clickTimer = setTimeout(() => {
@@ -471,6 +483,8 @@
                     openModal(info.dateStr);
                 }
             },
+            eventResize: info => updateEvent(info),
+
             events: events.map(event => ({
                 id: event.id,
                 title: event.summary,
@@ -486,7 +500,6 @@
     };
 
     const doesEventOverlap = (startDate, endDate) => {
-
         const start = startDate;
         const end = endDate;
 
@@ -500,6 +513,5 @@
     };
 
 </script>
-
 
 </html>
