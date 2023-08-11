@@ -127,12 +127,15 @@ class Calendar {
                 include: {
                     event: true
                 },
-                distinct: ['eventId']
+                
+                
+                distinct: ['eventId'],
+                
+
             });
     
             // Extract the events from the associations
             const eventsData = associations.map(assoc => assoc.event);
-
             return eventsData.map(eventData => new Event(eventData));
         } catch (error) {
             console.error(error);
@@ -189,7 +192,9 @@ class Calendar {
                 childEvents.forEach(event => event.calendarId = childCalendar.id);
                 calendar.events.push(...childEvents);
             }
-    
+
+            calendar.events = calendar.events.filter((event, index, self) => self.findIndex(e => e.id === event.id) === index);
+            
             return calendar;
         } catch (error) {
             console.error("Error fetching calendar by ID:", error);

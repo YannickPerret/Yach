@@ -26,7 +26,7 @@ class Event {
       },
       include: {
         CalendarEventAssociations: true
-      }
+      },
     });
 
     if (!eventWithAssociation) return null;
@@ -50,7 +50,7 @@ class Event {
     });
 
 
-    await this._associateWithCalendar(storedEvent.id);
+    //await this._associateWithCalendar(storedEvent.id);
   }
 
   _eventData() {
@@ -62,7 +62,7 @@ class Event {
       end: this.end.toISOString(),
       sequence: 1,
       status: "CONFIRMED",
-      transp: this.transp,
+      transp: this.transp || "OPAQUE",
       drStamp: "ffwsdfsfd",
       categories: "test",
       location: "test",

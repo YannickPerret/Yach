@@ -162,6 +162,7 @@ class Webserver {
                 existingEvent.summary = eventData.summary;
                 existingEvent.start = new Date(eventData.start);
                 existingEvent.end = new Date(eventData.end);
+                existingEvent.description = eventData.description || null;
                 await existingEvent.persist();
             } else {
                 // Handle scenario where event doesn't exist yet (if needed)
@@ -170,13 +171,14 @@ class Webserver {
                     start: new Date(eventData.start),
                     end: new Date(eventData.end),
                     summary: eventData.summary,
+                    description: eventData.description || null,
                     calendarId: calendarId
                 });
                 await newEvent.persist();
                 await calendar.addEvent(newEvent);
             }
         } else {
-            return reply.status(400).send({ error: 'Invalid data format' });
+            return reply.status(400).send({ message: 'Invalid data format' });
         }
         
         reply.send({ message: 'Calendar updated successfully' });

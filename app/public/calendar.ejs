@@ -254,9 +254,13 @@
 
 <script>
     let fullCalendar;
+    let calendarData
     let events
+    const DOUBLE_CLICK_DELAY = 300;
+    let clickTimer = null;
+
     document.addEventListener('DOMContentLoaded', () => {
-        const calendarData = <%- JSON.stringify(calendar) %>;
+        calendarData = <%- JSON.stringify(calendar) %>;
         events = calendarData.events;
 
         fullCalendar = initializeCalendar(events, calendarData.id);
@@ -266,9 +270,50 @@
         document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
     });
 
-    const DOUBLE_CLICK_DELAY = 300;
-    let clickTimer = null;
+    document.getElementById('eventForm').addEventListener('submit', async (data) => {
+        data.preventDefault();
 
+        const eventIdInput = document.getElementById('eventId').value;
+        const calendarIdInput = document.getElementById('calendarId').value;
+        const summaryInput = document.getElementById('summary').value;
+        const startDateInput = document.getElementById('startDate').value;
+        const endDateInput = document.getElementById('endDate').value;
+        const descriptionInput = document.getElementById('description').value;
+
+        if (doesEventOverlap(startDateInput, endDateInput)) {
+            alert("Un événement existe déjà pour cette plage horaire!");
+            return;
+        }
+
+        const event = {
+            eventId: eventIdInput,
+            calendarId: calendarIdInput || calendarData.id,
+            summary: summaryInput,
+            startDate: startDateInput,
+            endDate: endDateInput,
+            description: descriptionInput,
+        };
+
+        await submitEvent(event.calendarId, event);
+
+        closeModal();
+    });
+
+    const generateRandomString = (length = 10) => {
+        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let result = '';
+        for (let i = 0; i < length; i++) {
+            result += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        return result;
+    }
+
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            closeModal();
+        }
+    });
     const changeView = (viewName) => {
         fullCalendar.changeView(viewName);
     };
@@ -309,25 +354,25 @@
         }
     };
 
-    // a corrigé !
-    const submitEvent = async (calendarId, event) => {
-        const eventForm = document.getElementById('eventForm');
-        const summaryInput = document.getElementById('summary');
-        const startDateInput = document.getElementById('startDate');
-        const endDateInput = document.getElementById('endDate');
-        const descriptionInput = document.getElementById('description');
+    const submitEvent = async (event) => {
+        const eventForm = document.getElementById('eventForm').value;
+        const idInput = document.getElementById('eventId').value;
+        const summaryInput = document.getElementById('summary').value;
+        const startDateInput = document.getElementById('startDate').value;
+        const endDateInput = document.getElementById('endDate').value;
+        const descriptionInput = document.getElementById('description').value;
 
         const eventToUpdate = {
-            calendarId,
-            eventId: event.id || uuidv4(),
-            summary: summaryInput.value,
-            startDate: startDateInput.value,
-            endDate: endDateInput.value,
-            description: descriptionInput.value,
+            calendarId: event.calendarId || calendarData.id,
+            id: idInput || generateRandomString(),
+            summary: summaryInput,
+            start: startDateInput,
+            end: endDateInput,
+            description: descriptionInput,
         };
 
-        await fetch(`/api/v1/calendar/${calendarId}`, {
-            method: 'POST',
+        await fetch(`/api/v1/calendar/${calendarData.id}`, {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
             },
@@ -335,22 +380,13 @@
         })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
-                    event.setProp('title', eventToUpdate.summary);
-                    event.setStart(eventToUpdate.startDate);
-                    event.setEnd(eventToUpdate.endDate);
-                    event.setExtendedProp('description', eventToUpdate.description);
-                    closeModal();
-                } else {
-                    alert('An error occurred while updating the event');
-                }
+                closeModal();
             })
             .catch(error => {
                 console.error(error);
                 alert('An error occurred while updating the event');
             });
     };
-
 
     const openModal = async (eventOrDate) => {
         const modal = document.getElementById('eventModal');
@@ -367,30 +403,6 @@
             startDateInput.value = formatDateToDatetimeLocal(new Date(eventOrDate));
             endDateInput.value = formatDateToDatetimeLocal(new Date(eventOrDate));
 
-            eventForm.addEventListener('submit', async function (e) {
-                e.preventDefault();
-                const startDateVal = startDateInput.value;
-                const endDateVal = endDateInput.value;
-
-                if (doesEventOverlap(startDateVal, endDateVal)) {
-                    alert("Un événement existe déjà pour cette plage horaire!");
-                    return;
-                }
-
-                const event = {
-                    eventId: eventIdInput.value,
-                    calendarId: calendarIdInput.value,
-                    summary: summaryInput.value,
-                    startDate: startDateVal,
-                    endDate: endDateVal,
-                    description: descriptionInput.value,
-                };
-
-                await submitEvent(event.calendarId, event);
-
-                closeModal();
-            });
-
         } else {
             calendarIdInput.value = eventOrDate.extendedProps.calendarId;
             eventOrDate.description === undefined ? descriptionInput.placeholder = 'Your description here' : descriptionInput.value = eventOrDate.description;
@@ -405,6 +417,8 @@
 
     const closeModal = () => {
         const modal = document.getElementById('eventModal');
+        const eventData = document.getElementById('eventForm');
+        eventData.reset()
         modal.style.display = 'none';
     };
 
@@ -472,11 +486,13 @@
     };
 
     const doesEventOverlap = (startDate, endDate) => {
-        const start = new Date(startDate);
-        const end = new Date(endDate);
+
+        const start = startDate;
+        const end = endDate;
+
         return events.some(event => {
-            const eventStart = new Date(event.start);
-            const eventEnd = new Date(event.end);
+            const eventStart = event.start;
+            const eventEnd = event.end;
             return (start >= eventStart && start < eventEnd) ||
                 (end > eventStart && end <= eventEnd) ||
                 (start <= eventStart && end >= eventEnd);
