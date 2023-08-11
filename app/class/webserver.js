@@ -34,7 +34,7 @@ const upload = fastifyMulter({ storage: storage })
 
 class Webserver {
     constructor(config) {
-        this.app = Fastify({ logger: false, https: { key, cert } });
+        this.app = Fastify({ logger: false });
         this.port = config.port;
         this.fileConfig = config.fileConfig;
 

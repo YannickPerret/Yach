@@ -2,7 +2,7 @@
 <html>
   <head>
     <title>Yach - <%= title %></title>
-    <link rel="manifest" href="./manifest.json">
+    <link rel="manifest" href="/manifest.json">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta charset="UTF-8">
     <meta name="theme-color" content="#000000">
@@ -52,5 +52,17 @@
   <input type="submit" value="Submit">
 </form>
 
+<script >
+  if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js')
+    .then((registration) => {
+      console.log('Service Worker enregistré avec succès:', registration);
+    })
+    .catch((error) => {
+      console.log('L\'enregistrement du Service Worker a échoué:', error);
+    });
+}
+
+</script>
 </body>
 </html>

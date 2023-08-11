@@ -1,11 +1,12 @@
 {
     "name": "Mon Calendrier",
-    "short_name": "Calendrier",
+    "short_name": "Epsitec",
     "description": "Une application de calendrier PWA",
     "start_url": "/",
     "scope": "/calendars/",
     "display": "standalone",
     "background_color": "#ffffff",
+    "orientation": "portrait",
     "theme_color": "#000000",
     "service_worker": "./sw.js",
     "icons": [

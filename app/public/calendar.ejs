@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-    <link rel="manifest" href="../manifest.json">
+    <link rel="manifest" href="/manifest.json">
 
     <style>
         .container {
@@ -95,34 +95,42 @@
             height: 100%;
             overflow: auto;
             background-color: rgba(0, 0, 0, 0.4);
+            z-index: 1000;
         }
 
         .modal-content {
+            display: flex;
+            flex-direction: column;
             background-color: #fefefe;
-            margin: 10% auto;
-            padding: 20px;
+            margin: 5% auto;
+            padding: 30px;
             border: 1px solid #888;
-            width: 40%;
-            /* ajustez selon vos besoins */
+            width: 60%;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
             font-size: 18px;
+
         }
 
         .modal-content label {
             display: block;
             margin-bottom: 10px;
             margin-top: 20px;
+            flex-shrink: 0;
+            /* Empêche le rétrécissement des labels */
         }
 
         .modal-content input[type="text"],
-        .modal-content input[type="datetime-local"] {
+        .modal-content input[type="datetime-local"],
+        .modal-content textarea {
             width: 100%;
             padding: 10px;
             margin-top: 5px;
             border: 1px solid #ccc;
             border-radius: 4px;
             font-size: 16px;
+            flex-grow: 1;
+            /* Permet à l'input de prendre tout l'espace disponible */
         }
 
         .modal-content input[type="submit"] {
@@ -138,6 +146,24 @@
 
         .modal-content input[type="submit"]:hover {
             background-color: #357ab8;
+        }
+
+        /* Flexbox pour les éléments du formulaire */
+        .eventFormModal>div {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        /* Pour les champs date */
+        .eventFormModal>div:nth-child(4) {
+            flex-direction: row;
+        }
+
+        .eventFormModal>div:nth-child(4)>div {
+            display: flex;
+            width: 100%;
         }
 
 
@@ -189,18 +215,36 @@
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal()">&times;</span>
             <h2>Edit Event</h2>
-            <form id="eventForm">
-                <label for="calendarId">Calendar ID:</label>
-                <input type="text" id="calendarId" name="calendarId" disabled>
-                <label for="eventId">Event ID:</label>
-                <input type="text" id="eventId" name="eventId" disabled>
-                <label for="summary">Summary:</label>
-                <input type="text" id="summary" name="summary">
-                <label for="startDate">Start Date:</label>
-                <input type="datetime-local" id="startDate" name="startDate">
-                <label for="endDate">End Date:</label>
-                <input type="datetime-local" id="endDate" name="endDate">
-                <input type="submit" value="Update Event">
+            <form id="eventForm" class="eventFormModal">
+                <div>
+                    <label for="calendarId">Calendar ID:</label>
+                    <input type="text" id="calendarId" name="calendarId" disabled>
+                </div>
+                <div>
+                    <label for="eventId">Event ID:</label>
+                    <input type="text" id="eventId" name="eventId" disabled>
+                </div>
+                <div>
+                    <label for="summary">Summary:</label>
+                    <input type="text" id="summary" name="summary">
+                </div>
+                <div>
+                    <div>
+                        <label for="startDate">Start Date:</label>
+                        <input type="datetime-local" id="startDate" name="startDate">
+                    </div>
+                    <div>
+                        <label for="endDate">End Date:</label>
+                        <input type="datetime-local" id="endDate" name="endDate">
+                    </div>
+                </div>
+                <div>
+                    <label for="description">Description:</label>
+                    <textarea id="description" name="description"></textarea>
+                </div>
+                <div>
+                    <input type="submit" value="Update Event">
+                </div>
             </form>
         </div>
     </div>
@@ -209,13 +253,13 @@
 
 
 <script>
+    let fullCalendar;
+    let events
     document.addEventListener('DOMContentLoaded', () => {
         const calendarData = <%- JSON.stringify(calendar) %>;
-        const events = calendarData.events;
+        events = calendarData.events;
 
-        console.log(calendarData);
-
-        const fullCalendar = initializeCalendar(events, calendarData.id);
+        fullCalendar = initializeCalendar(events, calendarData.id);
         loadUserCalendars();
 
         document.getElementById('createCalendarBtn').addEventListener('click', () => { });
@@ -225,7 +269,7 @@
     const DOUBLE_CLICK_DELAY = 300;
     let clickTimer = null;
 
-    const changeView = viewName => {
+    const changeView = (viewName) => {
         fullCalendar.changeView(viewName);
     };
 
@@ -265,27 +309,98 @@
         }
     };
 
-    const openModal = eventOrDate => {
+    // a corrigé !
+    const submitEvent = async (calendarId, event) => {
+        const eventForm = document.getElementById('eventForm');
+        const summaryInput = document.getElementById('summary');
+        const startDateInput = document.getElementById('startDate');
+        const endDateInput = document.getElementById('endDate');
+        const descriptionInput = document.getElementById('description');
+
+        const eventToUpdate = {
+            calendarId,
+            eventId: event.id || uuidv4(),
+            summary: summaryInput.value,
+            startDate: startDateInput.value,
+            endDate: endDateInput.value,
+            description: descriptionInput.value,
+        };
+
+        await fetch(`/api/v1/calendar/${calendarId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(eventToUpdate),
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    event.setProp('title', eventToUpdate.summary);
+                    event.setStart(eventToUpdate.startDate);
+                    event.setEnd(eventToUpdate.endDate);
+                    event.setExtendedProp('description', eventToUpdate.description);
+                    closeModal();
+                } else {
+                    alert('An error occurred while updating the event');
+                }
+            })
+            .catch(error => {
+                console.error(error);
+                alert('An error occurred while updating the event');
+            });
+    };
+
+
+    const openModal = async (eventOrDate) => {
         const modal = document.getElementById('eventModal');
         const calendarIdInput = document.getElementById('calendarId');
         const eventIdInput = document.getElementById('eventId');
         const summaryInput = document.getElementById('summary');
         const startDateInput = document.getElementById('startDate');
         const endDateInput = document.getElementById('endDate');
+        const descriptionInput = document.getElementById('description');
+        const eventForm = document.getElementById('eventForm');
 
         if (eventOrDate instanceof Date || typeof eventOrDate === 'string') {
             summaryInput.value = "";
             startDateInput.value = formatDateToDatetimeLocal(new Date(eventOrDate));
             endDateInput.value = formatDateToDatetimeLocal(new Date(eventOrDate));
+
+            eventForm.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const startDateVal = startDateInput.value;
+                const endDateVal = endDateInput.value;
+
+                if (doesEventOverlap(startDateVal, endDateVal)) {
+                    alert("Un événement existe déjà pour cette plage horaire!");
+                    return;
+                }
+
+                const event = {
+                    eventId: eventIdInput.value,
+                    calendarId: calendarIdInput.value,
+                    summary: summaryInput.value,
+                    startDate: startDateVal,
+                    endDate: endDateVal,
+                    description: descriptionInput.value,
+                };
+
+                await submitEvent(event.calendarId, event);
+
+                closeModal();
+            });
+
         } else {
             calendarIdInput.value = eventOrDate.extendedProps.calendarId;
+            eventOrDate.description === undefined ? descriptionInput.placeholder = 'Your description here' : descriptionInput.value = eventOrDate.description;
             eventIdInput.value = eventOrDate.id;
             summaryInput.value = eventOrDate.title;
             startDateInput.value = formatDateToDatetimeLocal(eventOrDate.start);
             endDateInput.value = formatDateToDatetimeLocal(eventOrDate.end);
         }
 
-        modal.style.display = 'block';
+        modal.style.display = 'flex';
     };
 
     const closeModal = () => {
@@ -309,7 +424,8 @@
                         id: info.event.id,
                         start: info.event.start.toISOString(),
                         end: info.event.end.toISOString(),
-                        summary: info.event.title
+                        summary: info.event.title,
+                        description: info.event.description
                     };
 
                     const response = await fetch(`/api/v1/calendar/${info.event.extendedProps.calendarId}`, {
@@ -346,7 +462,8 @@
                 title: event.summary,
                 start: event.start,
                 end: event.end,
-                calendarId: calendarId
+                calendarId: calendarId,
+                description: event.description
             }))
         });
 
@@ -354,6 +471,19 @@
         return fullCalendar;
     };
 
+    const doesEventOverlap = (startDate, endDate) => {
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        return events.some(event => {
+            const eventStart = new Date(event.start);
+            const eventEnd = new Date(event.end);
+            return (start >= eventStart && start < eventEnd) ||
+                (end > eventStart && end <= eventEnd) ||
+                (start <= eventStart && end >= eventEnd);
+        });
+    };
+
 </script>
+
 
 </html>

@@ -17,5 +17,5 @@ module.exports = (app, handlers, upload) => {
   }, { prefix: '/api/v1' });
 
   app.get('/', handlers.getHome);
-  app.get('/calendars/:id', handlers.getWebCalendarById);
+  app.get('/calendar/:id', handlers.getWebCalendarById);
 };
