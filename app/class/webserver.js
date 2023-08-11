@@ -184,7 +184,6 @@ class Webserver {
         reply.send({ message: 'Calendar updated successfully' });
     }
     
-
     async submitCalendar(req, reply) {
         const data = req.file;
         const inputCalendarsSelected = req.body.calendars;
@@ -259,13 +258,16 @@ class Webserver {
 
     async getWebCalendarById(req, reply) {
         let id = req.params.id;
+        let calendar = []
 
-        let calendar = await Calendar.getById(id);
+        if(id) {
+            calendar = await Calendar.getById(id);
 
-        if (!calendar) {
-            return reply.status(404).send({ error: 'Calendar not found' });
+            if (!calendar) {
+                return reply.status(404).send({ error: 'Calendar not found' });
+            }
         }
-
+        
         return reply.status(200).view('calendar.ejs', {
             title: 'Calendar Page',
             calendar: calendar,
