@@ -12,10 +12,11 @@ model Calendar {
   id              String                       @id @default(uuid())
   name            String?
   type            String                       @default("OTHER")
+  url             String?   
+  syncExpressionCron String?                      @default("@daily")
   createdAt       DateTime                     @default(now())
   updatedAt       DateTime                     @updatedAt
   CalendarEventAssociations CalendarEventAssociation[]
-
   parentCalendarId String?                     @map("parent_calendar_id")
   parentCalendar   Calendar?   @relation("CalendarToCalendar", fields: [parentCalendarId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   subCalendars     Calendar[] @relation("CalendarToCalendar")
