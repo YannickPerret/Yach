@@ -1,16 +1,41 @@
+// @ts-check
+
 const Database = require('./database');
 
+/**
+ * @typedef {Object} EventType
+ * @property {string} id
+ * @property {string} summary
+ * @property {number} [sequence]
+ * @property {string} [status]
+ * @property {string} [transp]
+ * @property {string} [rRule]
+ * @property {Date} start
+ * @property {Date} end
+ * @property {string} [drStamp]
+ * @property {string} [categories]
+ * @property {string} [location]
+ * @property {string} [geo]
+ * @property {string} [description]
+ * @property {string} [url]
+ * @property {string} calendarId
+ */
+
+
 class Event {
+   /**
+   * @param {EventType} config
+   */
   constructor(config) {
     this.id = config.id;
     this.summary = config.summary;
     this.sequence = config.sequence;
     this.status = config.status;
     this.transp = config.transp;
-    this.rRule = config.rule;
+    this.rRule = config.rRule;
     this.start = config.start;
     this.end = config.end;
-    this.drStamp = config.drstamp;
+    this.drStamp = config.drStamp;
     this.categories = config.categories;
     this.location = config.location;
     this.geo = config.geo;
@@ -19,6 +44,10 @@ class Event {
     this.calendarId = config.calendarId;
   }
 
+   /**
+   * @param {string} id
+   * @returns {Promise<Event?>}
+   */
   static async getById(id) {
     const eventWithAssociation = await Database.db.event.findUnique({
       where: {
@@ -50,7 +79,7 @@ class Event {
     });
 
 
-    //await this._associateWithCalendar(storedEvent.id);
+    await this._associateWithCalendar(storedEvent.id);
   }
 
   _eventData() {
