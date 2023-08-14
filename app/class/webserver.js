@@ -1,3 +1,5 @@
+// @ts-check
+
 const Fastify = require('fastify');
 const view = require('@fastify/view');
 const ejs = require('ejs');
@@ -5,7 +7,6 @@ const routes = require('./router');
 const path = require('path');
 const fs = require('fs')
 const Calendar = require('./calendar');
-const FileAdapter = require('./fileAdapter');
 const Event = require('./event');
 
 const Ical = require('./adapter/ical');
@@ -16,6 +17,7 @@ const cert = fs.readFileSync(path.join(__dirname, '../certs/cert.pem'));
 const key = fs.readFileSync(path.join(__dirname, '../certs/key.pem'));
 
 // Configure multer storage
+
 const storage = fastifyMulter.diskStorage({
     destination: function (req, file, cb) {
         cb(null, './calendars/temps/')
@@ -84,7 +86,6 @@ class Webserver {
             process.exit(1);
         }
     }
-    
 
     // Methodes
     getCalendars(req, res) {
@@ -187,6 +188,7 @@ class Webserver {
     async submitCalendar(req, reply) {
         const data = req.file;
         const inputCalendarsSelected = req.body.calendars;
+        const inputCalendarUrl = req.body.calendarUrl;
         const typeCalendar = ["PROFESSIONAL", "PERSONAL", "OTHER"].includes(req.body.type) ? req.body.type : "OTHER";
         const nameCalendar = req.body.name || "Yoda Default";
 
@@ -202,7 +204,7 @@ class Webserver {
             filePath = data.path;
 
             const uploadCalendar = new Calendar({
-                source: new FileAdapter({ fileName: filePath, encoding: 'utf8' }),
+                source: filePath,
                 format: 'ics',
                 type: typeCalendar,
                 name: nameCalendar
@@ -217,9 +219,38 @@ class Webserver {
             }
 
             selectedCalendars.push(filePath);
-
             outputCalendar = uploadCalendar;
+
+            fs.unlink(filePath, (err) => {
+                if (err) {
+                    console.error(err);
+                    return;
+                }
+            });
         }
+
+        if (inputCalendarUrl && typeof inputCalendarUrl === 'string' && inputCalendarUrl.length > 0) {
+            const urlCalendar = new Calendar({
+                source: inputCalendarUrl,
+                format: 'ics',
+                type: typeCalendar,
+                name: nameCalendar,
+                url: inputCalendarUrl
+            });
+
+            console.log(urlCalendar)
+            await urlCalendar.persist();
+            await urlCalendar.parseEvents();
+
+            for (const event of urlCalendar.events) {
+                event.calendarId = urlCalendar.id;
+                await event.persist();
+            }
+
+            selectedCalendars.push(urlCalendar.id);
+            outputCalendar = urlCalendar;
+        }
+
 
         if (Array.isArray(selectedCalendars) && selectedCalendars.length > 1) {
             const newParentCalendar = new Calendar({ name: nameCalendar, type: "SHARED" });
@@ -232,17 +263,9 @@ class Webserver {
             }
 
             outputCalendar = newParentCalendar;
+
         } else if (!data) {
             return reply.status(400).send({ error: 'No calendars selected or uploaded' });
-        }
-
-        if (data) {
-            fs.unlink(filePath, (err) => {
-                if (err) {
-                    console.error(err);
-                    return;
-                }
-            });
         }
 
         reply.send({ url: `${process.env.ENDPOINT_URL}:${process.env.ENDPOINT_PORT}/api/v1/calendar/${outputCalendar.id}` });

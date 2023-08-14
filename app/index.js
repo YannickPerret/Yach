@@ -2,15 +2,20 @@
 
 /************ Import / include  *****************/
 const Webserver = require('./class/webserver');
-const FileAdapter = require('./class/fileAdapter');
+const FileRequest = require('./class/handler/fileRequest');
+const taskScheduler = require('./class/taskScheduler');
 const yaml = require('js-yaml');
 require('dotenv').config();
 
 
 /******** Initalize *******/
 
-let configFile = new FileAdapter({fileName: 'config.yaml', encoding: 'utf8'});
+let configFile = new FileRequest({source: 'config.yaml'});
 
 let config = yaml.load(configFile.load());
 
 let webSever = new Webserver({port: process.env.ENDPOINT_PORT, fileConfig: config});
+
+let taskSchedulerManager = new taskScheduler();
+
+taskSchedulerManager.start();

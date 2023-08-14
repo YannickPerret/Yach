@@ -1,63 +1,31 @@
 const Ical = require('./adapter/ical');
 const Event = require('./event');
-const ICAL = require('ical.js');
 const Database = require('./database');
 const { v4: uuidv4 } = require('uuid');
+const SourceHandler = require('./handler/sourceHandler');
 
 class Calendar {
 
     constructor(config) {
         this.id = config.id || uuidv4();
-        this.source = config.source;
+        this.source = new SourceHandler({source: config.source});
         this.format = config.format;
         this.outputCalendar = Ical.component(['vcalendar', [], []]);
         this.events = config.events || [];
         this.name = config.name;
         this.type = config.type;
+        this.url = config.url || null;
+        this.syncExpression = config.syncExpression || "daily()";
         this.parentCalendarId = config.parentCalendarId;
     }
-
+    
     parseEvents = async () => {
         if (this.source == null) throw new Error('No source file specified')
 
-        switch (this.source.fileName.substring(this.source.fileName.lastIndexOf('.') + 1)) {
-            case 'ics':
-                let jcalData = await Ical.parse(this.source.load());
-                let comp = Ical.component(jcalData);
+        // use the source handle for parsing the data
+        this.events = await this.source.parseData();
 
-                for (let event of comp.getAllSubcomponents('vevent')) {
-                    let start = event.getFirstProperty('dtstart').getFirstValue().toJSDate();
-                    let end = event.getFirstProperty('dtend').getFirstValue().toJSDate();
-
-                    // Convert to Europe/Zurich timezone
-                    start.zone = ICAL.TimezoneService.get('Europe/Zurich');
-                    end.zone = ICAL.TimezoneService.get('Europe/Zurich');
-
-                    let newEvent = new Event({
-                        id: event.getFirstPropertyValue('uid'),
-                        start: start,
-                        end: end,
-                        summary: event.getFirstPropertyValue('summary'),
-                        description: event.getFirstPropertyValue('description'),
-                        calendarId: this.id,
-                        transp: event.getFirstPropertyValue('transp'),
-                    });
-                    this.events.push(newEvent);
-                }
-
-                break;
-            case 'json':
-                // code block
-                break;
-            case 'csv':
-                // code block
-                break;
-            case 'xlsx':
-                // code block
-                break;
-            default:
-                console.log("no file recognized")
-        }
+        console.log(this.events);
     }
 
     generate = () => {
@@ -95,12 +63,16 @@ class Calendar {
             update: {
                 name: this.name,
                 type: this.type,
+                url: this.url,
+                syncExpressionCron: this.syncExpression,
                 parentCalendarId: this.parentCalendarId 
             },
             create: {
                 id: this.id,
                 name: this.name,
                 type: this.type,
+                url: this.url,
+                syncExpressionCron: this.syncExpression,
                 parentCalendarId: this.parentCalendarId
             }
         });
