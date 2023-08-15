@@ -1,59 +1,50 @@
-var cron = require('node-cron');
+const Task = require('./task');
 
-class taskScheduler {
-    constructor(config) {
-        this.cron = cron;
-        this.queue = [];
-        this.index = 0;
+class TaskScheduler {
+    constructor() {
+        if (TaskScheduler.instance) {
+            return TaskScheduler.instance;
+        }
 
-        this.init();
+        this.tasksQueue = [];
+        TaskScheduler.instance = this;
     }
 
-    init() {
-        this.cron.schedule('* * * * * *', () => {
-            if (this.queue.length > 0){
-                this.queue.forEach((task) => {
-                    if (this.tasks[task] && this.interval[task]){
-                        this.cron.schedule(this.interval[task], () => {
-                            this.tasks[task]();
-                        });
-                    }
-                });
-            }
+    addTask(interval, taskFunc, config = {}) {
+        const task = new Task({
+            calendar: config.calendar,
+            name: config.name || 'Unnamed Task',
+            expression: interval
+        });
+
+        task.start(taskFunc);
+        this.tasksQueue.push(task);
+        console.debug(`Cron - Calendar ${config.name} add sync to queue`)
+        return task;
+    }
+
+    removeTask(task) {
+        const index = this.tasksQueue.indexOf(task);
+        if (index !== -1) {
+            this.tasksQueue[index].remove();
+            this.tasksQueue.splice(index, 1);
+        }
+    }
+
+    showTasks() {
+        this.tasksQueue.forEach((task, index) => {
+            console.log(`Task ${index + 1}: ${task.getStatus()}`);
         });
     }
 
-    //start, check if new task in schedule and start it
-    start() {
-         
-    }
 
-    static addTask(task) {
-        taskScheduler.queue.push(task);
-    }
-
-    showQueue() {
-        if (this.queue.length > 0){
-            this.queue.forEach((task) => {
-                console.log(task);
-            });
+    static getInstance() {
+        if (!this.instance) {
+            this.instance = new TaskScheduler();
         }
+        return this.instance;
     }
-
-    _currentTask() {
-        
-    }
-
-    _startTask() {
-        //start task
-        this.cron.schedule(this._currentTask.getInterval()), () => {
-            this._currentTask.run();
-        }
-    }
-
-
 }
 
 
-
-module.exports = taskScheduler;
+module.exports = TaskScheduler;

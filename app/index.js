@@ -3,7 +3,8 @@
 /************ Import / include  *****************/
 const Webserver = require('./class/webserver');
 const FileRequest = require('./class/handler/fileRequest');
-const taskScheduler = require('./class/taskScheduler');
+const TaskScheduler = require('./class/taskScheduler');
+const Calendar = require('./class/calendar');
 const yaml = require('js-yaml');
 require('dotenv').config();
 
@@ -16,6 +17,19 @@ let config = yaml.load(configFile.load());
 
 let webSever = new Webserver({port: process.env.ENDPOINT_PORT, fileConfig: config});
 
-let taskSchedulerManager = new taskScheduler();
+let taskSchedulerManager = TaskScheduler.getInstance();
+(async () => {
+    try{
+        const calendarsWithUrl = await Calendar.getBy("url", "is not null")
+        if (calendarsWithUrl.length > 0) {
+            for (const calendar of calendarsWithUrl) {
+                taskSchedulerManager.addTask(calendar.syncExpressionCron, calendar.sync, {name: `Sync ${calendar.name}`});
+            }
+        }
+    }
+    catch (err) {
+        console.debug(err);
+    }
+})();
 
-taskSchedulerManager.start();
+
