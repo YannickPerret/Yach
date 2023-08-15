@@ -34,7 +34,18 @@ const storage = fastifyMulter.diskStorage({
 
 const upload = fastifyMulter({ storage: storage })
 
+/**
+ * @constructor
+ * @typedef {Object} WebserverType
+ * @property {number} port
+ * @property {string} fileConfig
+*/
+
+
 class Webserver {
+    /**
+     * @param {WebserverType} config
+     */
     constructor(config) {
         this.app = Fastify({ logger: false });
         this.port = config.port;
@@ -91,6 +102,7 @@ class Webserver {
     getCalendars(req, res) {
 
     }
+
 
     async getCalendarById(req, res) {
         let id = req.params.id;
@@ -196,6 +208,10 @@ class Webserver {
         let filePath;
         let outputCalendar;
 
+        if(data && inputCalendarUrl) {
+            return reply.status(400).send({ error: 'You can\'t upload a file and add a calendar url at the same time' });
+        }
+
         if (inputCalendarsSelected && Array.isArray(inputCalendarsSelected) && inputCalendarsSelected.length > 0) {
             selectedCalendars = inputCalendarsSelected;
         }
@@ -269,6 +285,15 @@ class Webserver {
         }
 
         reply.send({ url: `${process.env.ENDPOINT_URL}:${process.env.ENDPOINT_PORT}/api/v1/calendar/${outputCalendar.id}` });
+    }
+
+    async removeCalendar(req, reply) {
+        const id = req.params.id        
+
+        let calendar = await Calendar.getById(id)
+        if(calendar){
+            calendar.remove
+        }
     }
 
     async getHome(req, reply) {

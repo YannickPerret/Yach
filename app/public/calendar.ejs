@@ -197,6 +197,8 @@
                 <ul id="userCalendars">
                     <!-- Les éléments de liste (li) représentant chaque calendrier seront insérés ici -->
                 </ul>
+
+                <button id="settingsBtn">Settings</button>
             </div>
         </div>
         <div class="calendar-container">
@@ -249,6 +251,12 @@
         </div>
     </div>
 
+    <div class="modal" id="settingsModal">
+        <button id="removeCalendar">
+            Delete this calendar
+        </button>
+    </div>
+
 </body>
 
 
@@ -285,14 +293,12 @@
         const descriptionInput = document.getElementById('description').value;
 
         if (new Date(startDateInput) >= new Date(endDateInput)) {
-            alert("La date de début doit être inférieure à la date de fin !");
-            return;
+            console.log("La date de début doit être inférieure à la date de fin !");
         }
 
 
         if (doesEventOverlap(startDateInput, endDateInput)) {
-            alert("Un événement existe déjà pour cette plage horaire!");
-            return;
+            console.log("Un événement existe déjà pour cette plage horaire!");
         }
 
         const event = {
@@ -307,6 +313,11 @@
         await submitEvent(event.calendarId, event);
 
         closeModal();
+    });
+
+    document.getElementById('settingsBtn').addEventListener('click', () => {
+        //modal with settings show
+        openModalSettings();
     });
 
     const generateRandomString = (length = 10) => {
@@ -426,6 +437,28 @@
             });
     };
 
+    //model for setting
+    const openModalSettings = async () => {
+        const modal = document.getElementById('settingsModal');
+        document.getElementById('removeCalendar').addEventListener("click", () => {
+            fetch(`/api/v1/calendar/${calendarData.id}`, {
+                method :'DELETE',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+        })
+
+        modal.style.display = 'flex';
+    };
+
+    const closeModalSettings = () => {
+        const modal = document.getElementById('settingsModal');
+        const settingsData = document.getElementById('settingsForm');
+        settingsData.reset()
+        modal.style.display = 'none';
+    };
+
     const openModal = async (eventOrDate) => {
         const modal = document.getElementById('eventModal');
         const calendarIdInput = document.getElementById('calendarId');
@@ -436,20 +469,12 @@
         const descriptionInput = document.getElementById('description');
         const eventForm = document.getElementById('eventForm');
 
-
-        if (eventOrDate instanceof Date || typeof eventOrDate === 'string') {
-            summaryInput.value = "";
-            startDateInput.value = formatDateToDatetimeLocal(new Date(eventOrDate));
-            endDateInput.value = formatDateToDatetimeLocal(new Date(eventOrDate));
-
-        } else {
-            calendarIdInput.value = eventOrDate.extendedProps.calendarId;
-            eventOrDate.description === undefined ? descriptionInput.placeholder = 'Your description here' : descriptionInput.value = eventOrDate.description;
-            eventIdInput.value = eventOrDate.id;
-            summaryInput.value = eventOrDate.title;
-            startDateInput.value = formatDateToDatetimeLocal(eventOrDate.start);
-            endDateInput.value = formatDateToDatetimeLocal(eventOrDate.end);
-        }
+        calendarIdInput.value = calendarData.id;
+        eventIdInput.value = eventOrDate.id || generateRandomString();
+        summaryInput.value = eventOrDate.title || '';
+        startDateInput.value = formatDateToDatetimeLocal(eventOrDate.start || new Date(eventOrDate));
+        endDateInput.value = formatDateToDatetimeLocal(eventOrDate.end || new Date(eventOrDate));
+        eventOrDate.extendedProps?.description === undefined ? descriptionInput.placeholder = 'Your description here' : descriptionInput.value = eventOrDate.extendedProps.description;
 
         modal.style.display = 'flex';
     };
@@ -484,7 +509,7 @@
                 }
             },
             eventResize: info => updateEvent(info),
-
+            select: info => openModal(info),
             events: events.map(event => ({
                 id: event.id,
                 title: event.summary,

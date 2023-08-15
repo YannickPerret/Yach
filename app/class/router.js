@@ -6,6 +6,8 @@ module.exports = (app, handlers, upload) => {
       instance.put('/calendar/:id', handlers.updateCalendar);
       instance.post('/calendar', { preHandler: upload.single('file') }, handlers.submitCalendar);
 
+      instance.delete('/calendar/:id', handlers.removeCalendar)
+
       //route fastify with PROPFIND method
       instance.route({
           method: 'PROPFIND',
