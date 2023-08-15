@@ -13,7 +13,7 @@ model Calendar {
   name            String?
   type            String                       @default("OTHER")
   url             String?   
-  syncExpressionCron String?                      @default("@daily")
+  syncExpressionCron String?                      @default("0 0 * * *")
   createdAt       DateTime                     @default(now())
   updatedAt       DateTime                     @updatedAt
   CalendarEventAssociations CalendarEventAssociation[]
