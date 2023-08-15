@@ -5,7 +5,7 @@ const Database = require('./database');
 /**
  * @typedef {Object} EventType
  * @property {string} id
- * @property {string} summary
+ * @property {string} [summary]
  * @property {number} [sequence]
  * @property {string} [status]
  * @property {string} [transp]
@@ -82,10 +82,18 @@ class Event {
     await this._associateWithCalendar(storedEvent.id);
   }
 
+  async remove() {
+    await Database.db.event.delete({
+      where: {
+        id: this.id
+      }
+    });
+  }
+
   _eventData() {
     return {
       id: this.id,
-      summary: this.summary,
+      summary: this.summary || null,
       description: this.description,
       start: this.start.toISOString(),
       end: this.end.toISOString(),

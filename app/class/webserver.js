@@ -239,6 +239,7 @@ class Webserver {
             });
 
             await urlCalendar.persist();
+            urlCalendar.addToTaskScheduler();
             await urlCalendar.parseEvents();
 
             for (const event of urlCalendar.events) {
