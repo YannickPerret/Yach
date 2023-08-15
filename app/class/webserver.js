@@ -238,7 +238,6 @@ class Webserver {
                 url: inputCalendarUrl
             });
 
-            console.log(urlCalendar)
             await urlCalendar.persist();
             await urlCalendar.parseEvents();
 
@@ -264,7 +263,7 @@ class Webserver {
 
             outputCalendar = newParentCalendar;
 
-        } else if (!data) {
+        } else if (!data && !inputCalendarUrl) {
             return reply.status(400).send({ error: 'No calendars selected or uploaded' });
         }
 

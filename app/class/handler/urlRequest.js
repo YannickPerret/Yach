@@ -7,17 +7,22 @@ class UrlResquest extends ParseData{
     }
 
     async load() {
-        return await fetch(this.source)
-        .then(res => res.text())
-        .then(body => body)
-        .catch(err => console.log(err));
+        try {
+            const response = await fetch(this.source);
+            return await response.text();
+        } catch (err) {
+            console.log(err);
+            return null;
+        }
     }
 
     async parseData() {
         let events = [];
-        let data = this.load();
+        let data = await this.load();
 
-        events = await super.parseDataICS(data);
+        if (data) {
+            events = await this.parseDataICS(data);
+        }
 
         return events;
     }

@@ -13,7 +13,7 @@ class SourceHandler {
             if (this.source.startsWith('http') || this.source.startsWith('https')) {
                 return new UrlResquest({source: this.source}).parseData();
             }
-            else if (typeof this.source === 'string' || this.source instanceof String) {
+            else if (typeof this.source === 'string' || this.source instanceof String || this.source instanceof File) {
                 return new FileRequest({source: this.source}).parseData();
             } else {
                 console.debug("Adaptateur non reconnu");
