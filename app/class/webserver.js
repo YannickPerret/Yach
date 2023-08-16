@@ -128,28 +128,28 @@ class Webserver {
 
     async updateCalendar(req, reply) {
         console.log("Update calendar request received");
-        
+
         let calendarId = req.params.id;
         let eventData = req.body;
 
         console.log("Calendar ID:", calendarId);
-    
+
         // Get the calendar by its id
         const calendar = await Calendar.getById(calendarId);
-    
+
         if (!calendar) {
             return reply.status(404).send({ error: 'Calendar not found' });
         }
-    
+
         if (typeof eventData === 'string' && eventData.startsWith("BEGIN:VCALENDAR")) {
             // Handle ICS data
             let jcalData = Ical.parse(eventData);
             let comp = Ical.component(jcalData);
-        
+
             for (let event of comp.getAllSubcomponents('vevent')) {
                 let uid = event.getFirstPropertyValue('uid');
                 const existingEvent = await Event.getById(uid);
-            
+
                 if (existingEvent) {
                     existingEvent.summary = event.getFirstPropertyValue('summary');
                     existingEvent.start = event.getFirstPropertyValue('dtstart').toJSDate();
@@ -193,10 +193,10 @@ class Webserver {
         } else {
             return reply.status(400).send({ message: 'Invalid data format' });
         }
-        
+
         reply.send({ message: 'Calendar updated successfully' });
     }
-    
+
     async submitCalendar(req, reply) {
         const data = req.file;
         const inputCalendarsSelected = req.body.calendars;
@@ -208,7 +208,7 @@ class Webserver {
         let filePath;
         let outputCalendar;
 
-        if(data && inputCalendarUrl) {
+        if (data && inputCalendarUrl) {
             return reply.status(400).send({ error: 'You can\'t upload a file and add a calendar url at the same time' });
         }
 
@@ -288,11 +288,11 @@ class Webserver {
     }
 
     async removeCalendar(req, reply) {
-        const id = req.params.id        
+        const id = req.params.id
 
         let calendar = await Calendar.getById(id)
-        if(calendar){
-            calendar.remove
+        if (calendar) {
+            calendar.remove();
         }
     }
 
@@ -308,14 +308,14 @@ class Webserver {
         let id = req.params.id;
         let calendar = []
 
-        if(id) {
+        if (id) {
             calendar = await Calendar.getById(id);
 
             if (!calendar) {
                 return reply.status(404).send({ error: 'Calendar not found' });
             }
         }
-        
+
         return reply.status(200).view('calendar.ejs', {
             title: 'Calendar Page',
             calendar: calendar,

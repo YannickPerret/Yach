@@ -6,26 +6,26 @@ const Database = require('./database');
  * @typedef {Object} EventType
  * @property {string} id
  * @property {string} [summary]
- * @property {number} [sequence]
- * @property {string} [status]
+ * @property {number|null} [sequence]
+ * @property {string|null} [status]
  * @property {string} [transp]
- * @property {string} [rRule]
- * @property {Date} start
- * @property {Date} end
+ * @property {string|null} [rRule]
+ * @property {Date|string} start
+ * @property {Date|string} end
  * @property {string} [drStamp]
- * @property {string} [categories]
- * @property {string} [location]
- * @property {string} [geo]
- * @property {string} [description]
- * @property {string} [url]
- * @property {string} calendarId
- */
+ * @property {string|null} [categories]
+ * @property {string|null} [location]
+ * @property {string|null} [geo]
+ * @property {string|null} [description]
+ * @property {string|null} [url]
+ * @property {string|null} calendarId
+ **/
 
 
 class Event {
-   /**
-   * @param {EventType} config
-   */
+  /**
+    * @param {EventType} config
+  */
   constructor(config) {
     this.id = config.id;
     this.summary = config.summary;
@@ -45,8 +45,9 @@ class Event {
   }
 
    /**
-   * @param {string} id
-   * @returns {Promise<Event?>}
+   * Retrieves an event by its ID.
+   * @param {string} id - The ID of the event to retrieve.
+   * @returns {Promise<Event|null>} - The event if found, otherwise null.
    */
   static async getById(id) {
     const eventWithAssociation = await Database.db.event.findUnique({
@@ -68,7 +69,10 @@ class Event {
     return new Event(event);
 }
 
-
+/**
+   * Persists the current event instance to the database.
+   * @returns {Promise<void>}
+   */
   async persist() {
     const storedEvent = await Database.db.event.upsert({
       where: {
@@ -82,6 +86,10 @@ class Event {
     await this._associateWithCalendar(storedEvent.id);
   }
 
+   /**
+   * Removes the current event instance from the database.
+   * @returns {Promise<void>}
+   */
   async remove() {
     await Database.db.event.delete({
       where: {
@@ -90,6 +98,11 @@ class Event {
     });
   }
 
+  /**
+   * Retrieves the data of the current event instance.
+   * @private
+   * @returns {Object} - The event data.
+   */
   _eventData() {
     return {
       id: this.id,
@@ -109,6 +122,12 @@ class Event {
     };
   }
 
+  /**
+   * Associates the current event with a calendar.
+   * @private
+   * @param {string} eventId - The ID of the event.
+   * @returns {Promise<void>}
+   */
   async _associateWithCalendar(eventId) {
     const associationExists = await Database.db.calendarEventAssociation.findUnique({
       where: {

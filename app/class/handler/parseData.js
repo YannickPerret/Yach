@@ -5,6 +5,7 @@ const Ical = require('../adapter/ical');
 
 const Event = require('../event');
 
+
 class ParseData {
 
     async parseDataICS(data) {

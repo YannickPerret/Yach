@@ -1,3 +1,5 @@
+// @ts-check
+
 const Ical = require('./adapter/ical');
 const Event = require('./event');
 const Database = require('./database');
@@ -5,11 +7,27 @@ const { v4: uuidv4 } = require('uuid');
 const SourceHandler = require('./handler/sourceHandler');
 const TaskScheduler = require('./taskScheduler');
 
+/**
+ * Represents a calendar.
+ * @typedef {Object} CalendarType
+ * @property {string} id
+ * @property {string} [name]
+ * @property {string} type
+ * @property {string} [url]
+ * @property {string} [syncExpressionCron]
+ * @property {string} [parentCalendarId]
+ * @property {string} source
+ * @property {string} format
+ * @property {Event[]} [events]
+ * 
+ */
 class Calendar {
-
+    /**
+        * @param {CalendarType} config
+    */
     constructor(config) {
         this.id = config.id || uuidv4();
-        this.source = new SourceHandler({source: config.source});
+        this.source = new SourceHandler({ source: config.source });
         this.format = config.format;
         this.outputCalendar = Ical.component(['vcalendar', [], []]);
         this.events = config.events || [];
@@ -19,14 +37,27 @@ class Calendar {
         this.syncExpressionCron = config.syncExpressionCron || '0 0 * * *';
         this.parentCalendarId = config.parentCalendarId;
     }
-    
-    parseEvents = async () => {
-        if (this.source == null) throw new Error('No source file specified')
 
-        // use the source handle for parsing the data
-        this.events = await this.source.parseData();
+    /**
+         * Parse events from the source.
+         * @returns {Promise<void>}
+     */
+    parseEvents = async () => {
+        try {
+            if (this.source == null) throw new Error('No source file specified')
+
+            this.events = await this.source.parseData();
+
+        } catch (error) {
+            console.error(error);
+            this.events = [];
+        }
     }
 
+    /**
+     * Generates an iCal string from the events.
+     * @returns {string} - The iCal formatted string.
+     */
     generate = () => {
         this.events.forEach((event) => {
             let vevent = Ical.component('vevent');
@@ -41,11 +72,20 @@ class Calendar {
         return this.outputCalendar.toString();
     }
 
+    /**
+     * Add a child calendar.
+     * @param {Calendar} calendar - Calendar instance to be added as child.
+     * @returns {Promise<void>}
+     */
     async addChildCalendar(calendar) {
         calendar.parentCalendarId = this.id;
         await calendar.persist();
     }
 
+    /**
+     * Get child calendars.
+     * @returns {Promise<Calendar[]>} - List of child calendars.
+     */
     async getChildCalendars() {
         const childCalendars = await Calendar.getAll({ parentCalendarId: this.id });
         if (!childCalendars) {
@@ -54,6 +94,10 @@ class Calendar {
         return childCalendars;
     }
 
+    /**
+     * Persist the calendar data to the database.
+     * @returns {Promise<void>}
+     */
     async persist() {
         await Database.db.calendar.upsert({
             where: {
@@ -64,7 +108,7 @@ class Calendar {
                 type: this.type,
                 url: this.url,
                 syncExpressionCron: this.syncExpressionCron,
-                parentCalendarId: this.parentCalendarId 
+                parentCalendarId: this.parentCalendarId
             },
             create: {
                 id: this.id,
@@ -77,17 +121,26 @@ class Calendar {
         });
     }
 
+    /**
+     * Add an event to the calendar.
+     * @param {Event} event - Event instance to be added.
+     * @returns {Promise<void>}
+     */
     async addEvent(event) {
         if (this.type === "SHARED") {
-          const childCalendars = await this.getChildCalendars();
-          for (const childCalendar of childCalendars) {
-            await childCalendar.#associateEventWithCalendar(event.id);
-          }
+            const childCalendars = await this.getChildCalendars();
+            for (const childCalendar of childCalendars) {
+                await childCalendar.#associateEventWithCalendar(event.id);
+            }
         } else {
-          await this.#associateEventWithCalendar(event.id);
+            await this.#associateEventWithCalendar(event.id);
         }
-      }
+    }
 
+    /**
+     * Get events associated with the calendar.
+     * @returns {Promise<Event[]>} - List of events.
+     */
     async getEvents() {
         try {
             // Get all associations for the given calendar
@@ -98,13 +151,13 @@ class Calendar {
                 include: {
                     event: true
                 },
-                
-                
+
+
                 distinct: ['eventId'],
-                
+
 
             });
-    
+
             // Extract the events from the associations
             const eventsData = associations.map(assoc => assoc.event);
             return eventsData.map(eventData => new Event(eventData));
@@ -114,6 +167,10 @@ class Calendar {
         }
     }
 
+    /**
+     * Update events in the calendar.
+     * @returns {Promise<void>}
+     */
     async updateEvents() {
         for (let event of this.events) {
             await Database.db.event.delete({
@@ -122,14 +179,19 @@ class Calendar {
                 }
             });
         }
-    
+
         for (let event of this.events) {
             await event.persist();
         }
-    
+
         console.log("Events updated for calendar with id:", this.id);
     }
 
+    /**
+     * Get a calendar instance by its ID.
+     * @param {string} id - Unique identifier of the calendar.
+     * @returns {Promise<Calendar|null>} - Calendar instance or null if not found.
+     */
     static async getById(id) {
         try {
             const calendarData = await Database.db.calendar.findUnique({
@@ -143,19 +205,19 @@ class Calendar {
                     subCalendars: true
                 }
             });
-    
+
             if (!calendarData) {
-                return null;
+                return []
             }
-    
+
             // Convert associated events into Event instances
             if (calendarData.CalendarEventAssociations) {
                 calendarData.events = calendarData.CalendarEventAssociations.map(association => new Event(association.event));
                 delete calendarData.CalendarEventAssociations;
             }
-    
+
             const calendar = new Calendar(calendarData);
-    
+
             // Get child calendars and their events if any.
             const childCalendars = await calendar.getChildCalendars();
             for (const childCalendar of childCalendars) {
@@ -165,11 +227,11 @@ class Calendar {
             }
 
             calendar.events = calendar.events.filter((event, index, self) => self.findIndex(e => e.id === event.id) === index);
-            
+
             return calendar;
         } catch (error) {
             console.error("Error fetching calendar by ID:", error);
-            throw error; 
+            throw error;
         }
     }
 
@@ -200,10 +262,16 @@ class Calendar {
             throw error;
         }
     }
-    
+
+
+    /**
+     * Get all calendars optionally filtered by a given criteria.
+     * @param {Object|null} filter - Filtering criteria.
+     * @returns {Promise<Calendar[]>} - List of calendars.
+     */
     static async getAll(filter = null) {
         try {
-            let calendarsData 
+            let calendarsData
             if (filter != null) {
                 calendarsData = await Database.db.calendar.findMany({
                     where: {
@@ -223,6 +291,11 @@ class Calendar {
         }
     }
 
+    /**
+     * Remove a calendar by its ID.
+     * @param {string} id - Unique identifier of the calendar.
+     * @returns {Promise<void>}
+     */
     static async removeById(id) {
         try {
             await Database.db.calendar.delete({
@@ -235,13 +308,48 @@ class Calendar {
         }
     }
 
+    async remove() {
+        try {
+            if (this.type !== "SHARED") {
+                const associatedEvents = await Database.db.calendarEventAssociation.findMany({
+                    where: {
+                        calendarId: this.id
+                    },
+                    select: {
+                        eventId: true
+                    }
+                });
+        
+                for (let { eventId } of associatedEvents) {
+                    await Database.db.event.delete({
+                        where: {
+                            id: eventId
+                        }
+                    });
+                }
+            }
+    
+            await Database.db.calendar.delete({
+                where: {
+                    id: this.id
+                }
+            });
+        } catch (e) {
+            console.debug(e);
+        }
+    }
+    
+
     // add to task scheduler to sync
     addToTaskScheduler() {
         const taskSchedulerManager = TaskScheduler.getInstance();
-        taskSchedulerManager.addTask(this.syncExpressionCron, this.sync, {name: `Sync ${this.name}`});
+        taskSchedulerManager.addTask(this.syncExpressionCron, this.sync, { name: `Sync ${this.name}` });
     }
 
-    
+    /**
+     * Sync the calendar with its source.
+     * @returns {Promise<void>}
+     */
     sync = async () => {
         if (!this.url) {
             throw new Error('This calendar does not have a URL to sync from.');
@@ -278,32 +386,37 @@ class Calendar {
         }
 
         for (const event of eventsToDelete) {
-            await event.remove(); 
+            await event.remove();
         }
 
         console.log("Synced calendar with id:", this.id);
     }
     // PRIVATE METHOD
 
+    /**
+     * Associate an event with the calendar.
+     * @param {string} eventId - Unique identifier of the event.
+     * @returns {Promise<void>}
+     */
     async #associateEventWithCalendar(eventId) {
         const associationExists = await Database.db.calendarEventAssociation.findUnique({
-          where: {
-            eventId_calendarId: {
-              eventId: eventId,
-              calendarId: this.id
+            where: {
+                eventId_calendarId: {
+                    eventId: eventId,
+                    calendarId: this.id
+                }
             }
-          }
         });
-    
+
         if (!associationExists) {
-          await Database.db.calendarEventAssociation.create({
-            data: {
-              eventId: eventId,
-              calendarId: this.id
-            }
-          });
+            await Database.db.calendarEventAssociation.create({
+                data: {
+                    eventId: eventId,
+                    calendarId: this.id
+                }
+            });
         }
-      }
+    }
 }
 
 module.exports = Calendar;

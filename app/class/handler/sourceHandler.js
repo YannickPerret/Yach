@@ -6,6 +6,10 @@ class SourceHandler {
         this.source = config.source;
     }
 
+    /**
+     * @returns {Promise<EventType[]>}
+     * @throws {Error}
+     */
     async parseData() {
         try {            
             if (this.source == null) throw new Error('No source file specified')
@@ -21,7 +25,7 @@ class SourceHandler {
         }
         catch (e) {
             console.debug(e);
-            return null
+            return [];
         }
     }
 }
