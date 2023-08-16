@@ -14,6 +14,9 @@ const TaskScheduler = require('./taskScheduler');
  * @property {string} [name]
  * @property {string} type
  * @property {string} [url]
+ * @property {string} [visible]
+ * @property {string} [rights]
+ * @property {User[]} [users]
  * @property {string} [syncExpressionCron]
  * @property {string} [parentCalendarId]
  * @property {string} source
@@ -21,6 +24,7 @@ const TaskScheduler = require('./taskScheduler');
  * @property {Event[]} [events]
  * 
  */
+
 class Calendar {
     /**
         * @param {CalendarType} config
@@ -34,6 +38,9 @@ class Calendar {
         this.name = config.name;
         this.type = config.type;
         this.url = config.url;
+        this.visible = config.visible;
+        this.rights = config.rights;
+        this.users = config.users || [];
         this.syncExpressionCron = config.syncExpressionCron || '0 0 * * *';
         this.parentCalendarId = config.parentCalendarId;
     }
@@ -72,6 +79,20 @@ class Calendar {
         return this.outputCalendar.toString();
     }
 
+    async getUsers() {
+        const users = await Database.db.user.findMany({
+            where: {
+                calendars: {
+                    some: {
+                        id: this.id
+                    }
+                }
+            }
+        });
+
+        return users;
+    }
+
     /**
      * Add a child calendar.
      * @param {Calendar} calendar - Calendar instance to be added as child.
@@ -108,7 +129,7 @@ class Calendar {
                 type: this.type,
                 url: this.url,
                 syncExpressionCron: this.syncExpressionCron,
-                parentCalendarId: this.parentCalendarId
+                parentCalendarId: this.parentCalendarId,
             },
             create: {
                 id: this.id,
@@ -116,9 +137,17 @@ class Calendar {
                 type: this.type,
                 url: this.url,
                 syncExpressionCron: this.syncExpressionCron,
-                parentCalendarId: this.parentCalendarId
+                parentCalendarId: this.parentCalendarId,
             }
         });
+
+        console.log("Calendar persisted with id:", this.id);
+
+        if (this.type !== "SHARED") {
+            for (let user of this.users) {
+                await this.#associateUserWithCalendar(user.id);
+            }
+        }
     }
 
     /**
@@ -144,7 +173,7 @@ class Calendar {
     async getEvents() {
         try {
             // Get all associations for the given calendar
-            const associations = await Database.db.calendarEventAssociation.findMany({
+            const events = await Database.db.calendarEventAssociation.findMany({
                 where: {
                     calendarId: this.id
                 },
@@ -158,9 +187,7 @@ class Calendar {
 
             });
 
-            // Extract the events from the associations
-            const eventsData = associations.map(assoc => assoc.event);
-            return eventsData.map(eventData => new Event(eventData));
+            return events
         } catch (error) {
             console.error(error);
             return [];
@@ -412,6 +439,26 @@ class Calendar {
             await Database.db.calendarEventAssociation.create({
                 data: {
                     eventId: eventId,
+                    calendarId: this.id
+                }
+            });
+        }
+    }
+
+    async #associateUserWithCalendar(userId) {
+        const associationExists = await Database.db.CalendarUserAssociation.findUnique({
+            where: {
+                userId_calendarId: {
+                    userId: userId,
+                    calendarId: this.id
+                }
+            }
+        });
+
+        if (!associationExists) {
+            await Database.db.CalendarUserAssociation.create({
+                data: {
+                    userId: userId,
                     calendarId: this.id
                 }
             });
