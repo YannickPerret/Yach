@@ -168,11 +168,10 @@ class Calendar {
 
     /**
      * Get events associated with the calendar.
-     * @returns {Promise<Event[]>} - List of events.
+     * @returns {Event[]} - List of events.
      */
     async getEvents() {
         try {
-            // Get all associations for the given calendar
             const events = await Database.db.calendarEventAssociation.findMany({
                 where: {
                     calendarId: this.id
@@ -180,14 +179,11 @@ class Calendar {
                 include: {
                     event: true
                 },
-
-
                 distinct: ['eventId'],
-
-
             });
 
-            return events
+            //get only events.event
+            return events.map(event => event.event);
         } catch (error) {
             console.error(error);
             return [];

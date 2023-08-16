@@ -8,6 +8,7 @@ const path = require('path');
 const fs = require('fs')
 const Calendar = require('./calendar');
 const Event = require('./event');
+const User = require('./user');
 
 const Ical = require('./adapter/ical');
 
@@ -204,6 +205,11 @@ class Webserver {
         const typeCalendar = ["PROFESSIONAL", "PERSONAL", "OTHER"].includes(req.body.type) ? req.body.type : "OTHER";
         const nameCalendar = req.body.name || "Yoda Default";
 
+        const user = await User.getByUsername(req.body.username);
+        if (!user) {
+            return reply.status(400).send({ error: 'You are not authorized' });
+        }
+
         let selectedCalendars = [];
         let filePath;
         let outputCalendar;
@@ -223,8 +229,13 @@ class Webserver {
                 source: filePath,
                 format: 'ics',
                 type: typeCalendar,
-                name: nameCalendar
+                name: nameCalendar,
+                visible: "PUBLIC",
+                rights: "WRITE",
+                users: [user]
             });
+
+            console.log("Upload calendar:", uploadCalendar)
 
             await uploadCalendar.persist();
             await uploadCalendar.parseEvents();
@@ -251,7 +262,10 @@ class Webserver {
                 format: 'ics',
                 type: typeCalendar,
                 name: nameCalendar,
-                url: inputCalendarUrl
+                url: inputCalendarUrl,
+                visible: "PUBLIC",
+                rights: "READ",
+                users: [user]
             });
 
             await urlCalendar.persist();
@@ -269,7 +283,17 @@ class Webserver {
 
 
         if (Array.isArray(selectedCalendars) && selectedCalendars.length > 1) {
-            const newParentCalendar = new Calendar({ name: nameCalendar, type: "SHARED" });
+            const newParentCalendar = new Calendar({ 
+                name: nameCalendar, 
+                type: "SHARED", 
+                visible: "PUBLIC", 
+                rights: "WRITE" 
+            });
+        
+            if (selectedCalendars.some(calendar => calendar.startsWith("http"))) {
+                newParentCalendar.rights = "READ";
+            }
+
             await newParentCalendar.persist();
 
             for (const selectedCalendar of selectedCalendars) {
@@ -296,6 +320,8 @@ class Webserver {
         }
     }
 
+    /* WEB INTERFACE */
+
     async getHome(req, reply) {
         let calendars = await Calendar.getAll();
         return reply.status(200).view('index.ejs', {
@@ -304,10 +330,91 @@ class Webserver {
         });
     }
 
+    async getUserCalendars(req, reply) {
+        let username = req.params.id;
+        let user = await User.getByUsername(username);
+        if (!user) {
+            return reply.status(404).send({ error: 'User not found' });
+        }
+    
+        let calendars = await user.getCalendars();
+    
+        return reply.status(200).view('calendar.ejs', {
+            title: 'Calendars Page',
+            calendars: calendars,
+            user: user,
+        });
+    }
+    
+
+    async getUserCalendarById(req, reply) {
+        let username = req.params.id;
+        let calendarId = req.params.calendarId;
+        
+        let user = await User.getByUsername(username);
+        if (!user) {
+            return reply.status(404).send({ error: 'User not found' });
+        }
+    
+        let calendar = await Calendar.getById(calendarId);
+        if (!calendar) {
+            return reply.status(404).send({ error: 'Calendar not found' });
+        }
+    
+        let calendars = await user.getCalendarWithEvents();
+        
+        return reply.status(200).view('calendar.ejs', {
+            title: 'Calendar Page',
+            calendars: calendars,
+            user: user,
+        });
+    }
+    
+
+
+    async getUserCalendarEvents(req, reply) {
+        let id = req.params.id;
+        let calendarId = req.params.calendarId;
+        let calendar = []
+
+        if (id) {
+            calendar = await Calendar.getById(calendarId);
+            if (!calendar) {
+                return reply.status(404).send({ error: 'Calendar not found' });
+            }
+        }
+
+        return reply.status(200).view('events.ejs', {
+            title: 'Events Page',
+            calendar: calendar,
+        });
+    }
+
+    async getUserCalendarEventById(req, reply) {
+        let id = req.params.id;
+        let calendarId = req.params.calendarId;
+        let eventId = req.params.eventId;
+        let calendar = []
+        
+        if (id) {
+            calendar = await Calendar.getById(calendarId);
+            if (!calendar) {
+                return reply.status(404).send({ error: 'Calendar not found' });
+            }
+        }
+        let event = await Event.getById(eventId);
+        if (!event) {
+            return reply.status(404).send({ error: 'Event not found' });
+        }
+        return reply.status(200).view('event.ejs', {
+            title: 'Event Page',
+            event: event,
+        });
+    }
+
     async getWebCalendarById(req, reply) {
         let id = req.params.id;
         let calendar = []
-
         if (id) {
             calendar = await Calendar.getById(id);
 
