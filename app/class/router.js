@@ -18,7 +18,11 @@ module.exports = (app, handlers, upload) => {
       next();
   }, { prefix: '/api/v1' });
 
-  app.get('/', handlers.getHome);
-  app.get('/calendar/:id', handlers.getWebCalendarById);
-  app.get('/calendar', handlers.getWebCalendarById);
+  app.get('/', handlers.getHome); // A terme on a le login ici
+  app.get('/calendar/:id', handlers.getWebCalendarById); // visualisation du calendrier if public
+  app.get('/calendar', handlers.getWebCalendarById); // Visualisation du calendrier vide
+
+  app.get('users/:id', handlers.getUserById);
+  app.get('users/:id/calendars', handlers.getUserCalendars);
+  app.get('users/:id/calendars/:calendarId', handlers.getUserCalendarById);
 };
