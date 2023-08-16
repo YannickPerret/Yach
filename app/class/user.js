@@ -19,9 +19,18 @@ class User {
     }
 
     static async getBy(field, value) {
-        const user = await Database.db.findUnique({
+        const user = await Database.db.user.find({
             where: {
                 [field]: value
+            }
+        })
+        return new User(user);
+    }
+    
+    static async getByUsername(username) {
+        const user = await Database.db.user.findUnique({
+            where: {
+                username: username
             }
         })
         return new User(user);
