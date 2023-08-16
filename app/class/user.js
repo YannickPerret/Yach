@@ -1,4 +1,5 @@
 const Database = require('./database');
+const Calendar = require('./calendar');
 
 class User {
     
@@ -6,7 +7,6 @@ class User {
         this.id = config.id;
         this.username = config.username;
         this.token = config.token;
-        this.calendars = config.calendars;
     }
 
     static async getById(id) {
@@ -19,16 +19,16 @@ class User {
     }
 
     static async getBy(field, value) {
-        const user = await Database.db.user.find({
+        const user = await Database.db.user.findMany({
             where: {
                 [field]: value
             }
         })
         return new User(user);
     }
-    
+
     static async getByUsername(username) {
-        const user = await Database.db.user.findUnique({
+        const user = await Database.db.user.findFirst({
             where: {
                 username: username
             }
@@ -37,14 +37,14 @@ class User {
     }
 
     static async create(user) {
-        const newUser = await Database.db.create({
+        const newUser = await Database.db.user.create({
             data: user
         })
         return new User(newUser);
     }
 
     static async update(id, user) {
-        const updatedUser = await Database.db.update({
+        const updatedUser = await Database.db.user.update({
             where: {
                 id: id
             },
@@ -54,7 +54,7 @@ class User {
     }
 
     static async delete(id) {
-        const deletedUser = await Database.db.delete({
+        const deletedUser = await Database.db.user.delete({
             where: {
                 id: id
             }
@@ -63,38 +63,84 @@ class User {
     }
 
     async persist() {
-        const user = await Database.db.upsert({
+        const user = await Database.db.user.upsert({
             where: {
                 id: this.id
             },
             update: {
                 username: this.username,
                 token: this.token,
-                calendars: this.calendars
             },
             create: {
                 username: this.username,
                 token: this.token,
-                calendars: this.calendars
             }
         })
         return new User(user);
     }
 
     async getCalendars() {
-        const calendars = await Database.db.findUnique({
+        const userWithCalendars = await Database.db.user.findUnique({
             where: {
                 id: this.id
             },
-            select: {
-                calendars: true
+            include: {
+                CalendarUsersAssociations: {
+                    include: {
+                        calendar: true
+                    }
+                }
             }
         })
-        return calendars.calendars.map(calendar => {
-            return new Calendar(calendar);
+    
+        if (!userWithCalendars || !userWithCalendars.CalendarUsersAssociations) return [];
+    
+        const calendars = userWithCalendars.CalendarUsersAssociations.map(association => {
+            return new Calendar(association.calendar);
         })
+    
+        return calendars;
     }
 
+    async getCalendarWithEvents() {
+        const userWithCalendars = await Database.db.user.findUnique({
+            where: {
+                id: this.id
+            },
+            include: {
+                CalendarUsersAssociations: {
+                    include: {
+                        calendar: {
+                            include: {
+                                CalendarEventAssociations: {
+                                    include: {
+                                        event: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+
+        
+    
+        if (!userWithCalendars || !userWithCalendars.CalendarUsersAssociations) return [];
+        const calendars = userWithCalendars.CalendarUsersAssociations.map(association => {
+            const calendarData = association.calendar;
+            // Converting CalendarEventAssociations to just events for the Calendar class
+            if (calendarData.CalendarEventAssociations) {
+                calendarData.events = calendarData.CalendarEventAssociations.map(assoc => assoc.event);
+                delete calendarData.CalendarEventAssociations;
+            }
+
+            return new Calendar(calendarData);
+        })
+
+        return calendars;
+    }
+    
 }
 
 module.exports = User;

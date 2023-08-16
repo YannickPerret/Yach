@@ -345,7 +345,6 @@ class Webserver {
             user: user,
         });
     }
-    
 
     async getUserCalendarById(req, reply) {
         let username = req.params.id;
@@ -362,10 +361,10 @@ class Webserver {
         }
     
         let calendars = await user.getCalendarWithEvents();
-        
+
         return reply.status(200).view('calendar.ejs', {
             title: 'Calendar Page',
-            calendars: calendars,
+            calendars: calendars[0],
             user: user,
         });
     }

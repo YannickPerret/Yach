@@ -27,6 +27,11 @@
             overflow-y: auto;
         }
 
+        .selected {
+            font-weight: bold;
+            background-color: #eee;
+        }
+
         .sidebar-header {
             height: 4%;
         }
@@ -156,6 +161,11 @@
             width: 100%;
         }
 
+        .btnRemoveCalendar {
+            width: 10%;
+            height: 10%;
+        }
+
         /* Pour les champs date */
         .eventFormModal>div:nth-child(4) {
             flex-direction: row;
@@ -195,7 +205,15 @@
                 <div id="miniCalendar"></div>
                 <h3>My Calendars</h3>
                 <ul id="userCalendars">
-                    <!-- Les éléments de liste (li) représentant chaque calendrier seront insérés ici -->
+                    <% if (typeof calendars !=='undefined' ) { %>
+                        <li>
+                            <a href="/users/<%= user.username %>/calendars/<%= calendars.id %>" <% if (typeof
+                                currentCalendar !=='undefined' && calendar.id===currentCalendar.id) {
+                                %>class="selected"<% } %>>
+                                    <%= calendars.name %>
+                            </a>
+                        </li>
+                    <% } %>
                 </ul>
 
                 <button id="settingsBtn">Settings</button>
@@ -252,31 +270,28 @@
     </div>
 
     <div class="modal" id="settingsModal">
-        <button id="removeCalendar">
+        <label>URL public api ics</label>
+
+        <button id="removeCalendar" class="btnRemoveCalendar">
             Delete this calendar
         </button>
     </div>
-
 </body>
-
 
 <script>
     let fullCalendar;
-    let calendarData
+    let userCalendar
+    let user;
     let events
     const DOUBLE_CLICK_DELAY = 300;
     let clickTimer = null;
 
     document.addEventListener('DOMContentLoaded', () => {
-        calendarData = <%- JSON.stringify(calendar) %>;
+        user = <%- JSON.stringify(user) %>;
+        userCalendars = <%- JSON.stringify(calendars) %>;
+        events = userCalendars.events;
 
-        if (Array.isArray(calendarData) && calendarData.length === 0) {
-         calendarData = { events: [], id: null }; // Default structure
-        }
-        events = calendarData.events;
-
-        fullCalendar = initializeCalendar(events, calendarData.id);
-        loadUserCalendars();
+        fullCalendar = initializeCalendar(events, userCalendars.id);
 
         document.getElementById('createCalendarBtn').addEventListener('click', () => { });
         document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
@@ -303,7 +318,7 @@
 
         const event = {
             eventId: eventIdInput,
-            calendarId: calendarIdInput || calendarData.id,
+            calendarId: calendarIdInput || userCalendars.id,
             summary: summaryInput,
             startDate: startDateInput,
             endDate: endDateInput,
@@ -316,7 +331,6 @@
     });
 
     document.getElementById('settingsBtn').addEventListener('click', () => {
-        //modal with settings show
         openModalSettings();
     });
 
@@ -347,20 +361,6 @@
         return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
     };
 
-    const loadUserCalendars = () => {
-        const mockCalendars = [
-            { id: '1', name: 'Work' },
-            { id: '2', name: 'Personal' },
-        ];
-        const calendarList = document.getElementById('userCalendars');
-
-        mockCalendars.forEach(calendar => {
-            const li = document.createElement('li');
-            li.textContent = calendar.name;
-            calendarList.appendChild(li);
-        });
-    };
-
     const toggleSidebar = () => {
         const sidebar = document.querySelector('.sidebar');
         const calendarContainer = document.querySelector('.calendar-container');
@@ -376,31 +376,31 @@
 
     const updateEvent = async (info) => {
         try {
-                    const updatedData = {
-                        id: info.event.id,
-                        start: info.event.start.toISOString(),
-                        end: info.event.end.toISOString(),
-                        summary: info.event.title,
-                        description: info.event.description
-                    };
+            const updatedData = {
+                id: info.event.id,
+                start: info.event.start.toISOString(),
+                end: info.event.end.toISOString(),
+                summary: info.event.title,
+                description: info.event.description
+            };
 
-                    const response = await fetch(`/api/v1/calendar/${info.event.extendedProps.calendarId}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(updatedData)
-                    });
+            const response = await fetch(`/api/v1/calendar/${info.event.extendedProps.calendarId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatedData)
+            });
 
-                    const data = await response.json();
+            const data = await response.json();
 
-                    if (response.status !== 200) {
-                        console.error(data.error);
-                        info.revert();
-                    }
-                } catch (err) {
-                    console.error('Erreur lors de la mise à jour de l\'événement', err);
-                }
+            if (response.status !== 200) {
+                console.error(data.error);
+                info.revert();
+            }
+        } catch (err) {
+            console.error('Erreur lors de la mise à jour de l\'événement', err);
+        }
     }
 
     const submitEvent = async (event) => {
@@ -412,7 +412,7 @@
         const descriptionInput = document.getElementById('description').value;
 
         const eventToUpdate = {
-            calendarId: event.calendarId || calendarData.id,
+            calendarId: event.calendarId || userCalendars.id,
             id: idInput || generateRandomString(),
             summary: summaryInput,
             start: startDateInput,
@@ -420,7 +420,7 @@
             description: descriptionInput,
         };
 
-        await fetch(`/api/v1/calendar/${calendarData.id}`, {
+        await fetch(`/api/v1/calendar/${userCalendars.id}`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -441,8 +441,8 @@
     const openModalSettings = async () => {
         const modal = document.getElementById('settingsModal');
         document.getElementById('removeCalendar').addEventListener("click", () => {
-            fetch(`/api/v1/calendar/${calendarData.id}`, {
-                method :'DELETE',
+            fetch(`/api/v1/calendar/${userCalendars.id}`, {
+                method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'
                 }
@@ -469,7 +469,7 @@
         const descriptionInput = document.getElementById('description');
         const eventForm = document.getElementById('eventForm');
 
-        calendarIdInput.value = calendarData.id;
+        calendarIdInput.value = userCalendars.id;
         eventIdInput.value = eventOrDate.id || generateRandomString();
         summaryInput.value = eventOrDate.title || '';
         startDateInput.value = formatDateToDatetimeLocal(eventOrDate.start || new Date(eventOrDate));
@@ -487,17 +487,19 @@
     };
 
     const initializeCalendar = (events, calendarId) => {
+
         const calendarEl = document.getElementById('calendar');
         const fullCalendar = new FullCalendar.Calendar(calendarEl, {
             height: 'auto',
             initialView: 'timeGridWeek',
             editable: true,
             selectable: true,
-            timeZone: 'Europe/Zurich',
+            //timeZone: 'Europe/Zurich',
             firstDay: 1,
             eventClick: info => openModal(info.event),
-            eventDrop: info => updateEvent(info),
+            eventDrop: info => userCalendars.rights === 'Write' && updateEvent(info),
             dateClick: info => {
+                if (userCalendars.rights === 'Read') return;
                 if (clickTimer === null) {
                     clickTimer = setTimeout(() => {
                         clickTimer = null;
@@ -508,7 +510,7 @@
                     openModal(info.dateStr);
                 }
             },
-            eventResize: info => updateEvent(info),
+            eventResize: info => userCalendars.rights === 'Write' && updateEvent(info),
             select: info => openModal(info),
             events: events.map(event => ({
                 id: event.id,
@@ -518,6 +520,7 @@
                 calendarId: calendarId,
                 description: event.description
             }))
+
         });
 
         fullCalendar.render();
