@@ -92,6 +92,14 @@
             padding-left: 10px;
         }
 
+        .calendar-message {
+            display : none;
+            padding : 15px;
+            width: 80%;
+            height: 25px;
+            border-radius: 5px;
+        }
+
         #calendar {
             max-width: 100%;
             margin: 0 auto;
@@ -220,7 +228,7 @@
             </div>
         </div>
         <div class="calendar-container">
-            <div class="message" id="message"></div>
+            <div class="calendar-message" id="message"></div>
             <div id="calendar-nav">
                 <button onclick="changeView('dayGridMonth')">Month</button>
                 <button onclick="changeView('timeGridWeek')">Week</button>
@@ -300,6 +308,7 @@
         divError = document.getElementById('message');
         document.getElementById('createCalendarBtn').addEventListener('click', () => { });
         document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
+
     });
 
     const loadUserCalendarList = () => {
@@ -319,7 +328,6 @@
             li.textContent = calendar.name;
             li.addEventListener('click', () => {
                 currentCalendar = calendar;
-                console.log(currentCalendar)
                 fullCalendar = initializeCalendar(currentCalendar.events, userCalendars.id);
             });
             li.appendChild(a);
@@ -432,7 +440,7 @@
         }
         catch (error) {
             console.error(error);
-            divError.textContent = error;
+            showErrorMessage(error)
             info.revert();
         }
     };
@@ -474,7 +482,7 @@
             })
             .catch(error => {
                 console.error(error);
-                divError.textContent = error;
+                showErrorMessage(error)
             });
 
     };
@@ -595,6 +603,20 @@
                 (end > eventStart && end <= eventEnd) ||
                 (start <= eventStart && end >= eventEnd);
         });
+    };
+
+    const showErrorMessage = (message, type = "error") => {
+        setTimeout(() => {
+            divError.textContent = '';
+            divError.style.display = 'none';
+        }, 10000);
+        if (type === "error") {
+            divError.style.background = '#FFCCCC';
+        } else {
+            divError.style.background = "green";
+        }
+        divError.style.display = 'block';
+        divError.textContent = message;
     };
 
 </script>
