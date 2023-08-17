@@ -300,27 +300,32 @@ class Webserver {
     }
 
     async handleMultipleCalendars(selectedCalendars, nameCalendar) {
-        const newParentCalendar = new Calendar({
+        let updateParentCalendar = false;
+
+        const ParentCalendar = new Calendar({
             name: nameCalendar,
             type: "SHARED",
             visible: "PUBLIC",
         });
     
-        await newParentCalendar.persist();
+        await ParentCalendar.persist();
     
         for (const selectedCalendar of selectedCalendars) {
             const calendar = await Calendar.getById(selectedCalendar);
-            if (calendar.url) {
-                newParentCalendar.right = "READ";
+            if (calendar.url !== null) {
+                ParentCalendar.right = "READ";
+                updateParentCalendar = true;
             }
-            calendar.parentCalendarId = newParentCalendar.id;
+            calendar.parentCalendarId = ParentCalendar.id;
             await calendar.persist();
         }
-    
-        return newParentCalendar;
-    }
-    
 
+        if (updateParentCalendar) {
+            await ParentCalendar.persist();
+        }
+
+        return ParentCalendar;
+    }
 
     async removeCalendar(req, reply) {
         const id = req.params.id
