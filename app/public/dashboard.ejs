@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Yach - <%= title %></title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta charset="UTF-8">
+    <meta name="theme-color" content="#000000">
+  </head>
+<body>
+
+  <div id="error"></div>
+<form method="post" enctype="multipart/form-data">
+  <input type="text" name="username" id="username" hidden /> <br>
+
+  <h2>Create a new Calendar</h2>
+  <label>Upload calendar : </label><input type="file" name="file" id="file" /><br>  
+  <label for="pathUrl">Or by URL</label>
+  <input type="text" name="calendarUrl" id="pathUrl" placeholder="https://exemple.com/calendar.ics" /><br>
+  <label>Calendar type : </label>
+  <select name="type">
+    <option value="PERSONAL">Personal</option>
+    <option value="PROFESSIONAL">Professional</option>
+    <option value="OTHER">Other</option>
+  </select><br>
+  <label>Calendar name : </label><input type="text" name="name" id="name" /><br>
+
+  <h2>Select your calendars :</h2>
+  <% if (calendars.length === 0) { %>
+    <p>Don't have calendars available</p>
+  <% } else { %>
+    <h3>Epistec team</h3>
+    <% calendars.forEach(function(calendar) { %>
+        <% if (calendar.type == 'PERSONAL') { %>
+          <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
+          <label for="<%= calendar.id %>"><a href="/api/v1/</calendar/<%= calendar.id %>"><%= calendar.name %></a></label><br>
+        <% } %>
+    <% }); %>
+
+    <h3>Epsitec calendar</h3>
+    <% calendars.forEach(function(calendar) { %>
+        <% if (calendar.type == 'PROFESSIONAL') { %>
+          <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
+          <label for="<%= calendar.id %>"><a href="/api/v1/calendar/<%= calendar.id %>"><%= calendar.name %></a></label><br>
+        <% } %>
+    <% }); %>
+
+
+  <h3>Others calendar</h3>
+    <% calendars.forEach(function(calendar) { %>
+        <% if (calendar.type == 'OTHER') { %>
+          <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
+          <label for="<%= calendar.id %>"><a href="/api/v1/calendar/<%= calendar.id %>"><%= calendar.name %></a></label><br>
+        <% } %>
+    <% }); %>
+    <% } %>
+
+  <h3>Shared Calendars (Only check here)</h3>
+  <% calendars.forEach(function(calendar) { %>
+    <% if (calendar.type == 'SHARED') { %>
+      <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
+      <label for="<%= calendar.id %>"><a href="/api/v1/calendar/<%= calendar.id %>"><%= calendar.name %></a></label><br>
+    <% } %>
+  <% }); %>
+  <br />
+  <input type="submit" value="Submit">
+</form>
+
+<script>
+
+  let username;
+  document.addEventListener("DOMContentLoaded", () => {
+    if (!localStorage.getItem('token') || !localStorage.getItem('username'))  {
+      window.location.href = '/';
+    }
+    document.querySelector('#username').value = localStorage.getItem('username');
+
+    const form = document.querySelector('form');
+    const errorDiv = document.querySelector('#error');
+    const fileInput = document.querySelector('#file');
+    const pathUrl = document.querySelector('#pathUrl');
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.value) {
+        pathUrl.disabled = true;
+      } else {
+        pathUrl.disabled = false;
+      }
+    });
+
+    pathUrl.addEventListener('change', () => {
+      if (pathUrl.value) {
+        fileInput.disabled = true;
+      } else {
+        fileInput.disabled = false;
+      }
+    });
+    
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const formData = new FormData(form);
+      const url = '/api/v1/calendar';
+      const options = {
+        method: 'POST',
+        body: formData
+      };
+
+
+      fetch(url, options)
+        .then((response) => {
+          if (response.ok) {
+            return response.json();
+          }   
+        })
+        .then((data) => {
+          window.location.href = data.url;
+        })
+        .catch((err) => {
+          console.error(err);
+          errorDiv.textContent = err.error || 'Something went wrong!';
+        });
+    });
+  });
+</script>
+</body>
+</html>

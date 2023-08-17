@@ -354,7 +354,7 @@ class Webserver {
 
         reply.header('Authorization', `Bearer ${token}`);
 
-        return { token, redirectUrl: `/users/${username}/calendars` };
+        return { token, username, redirectUrl: `/users/${username}/calendars` };
     }
 
     /****** WEB INTERFACE ********/

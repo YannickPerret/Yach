@@ -298,6 +298,10 @@
     let clickTimer = null;
 
     document.addEventListener('DOMContentLoaded', () => {
+        if (localStorage.getItem('token') === null) {
+            window.location.href = '/';
+        }
+
         user = <%- JSON.stringify(user) %>;
         userCalendars = <%- JSON.stringify(calendars) %>;
         loadUserCalendarList();
