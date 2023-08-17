@@ -326,7 +326,9 @@
             const a = document.createElement('a');
             a.href = `/users/${user.username}/calendar/${calendar.id}`;
             li.textContent = calendar.name;
-            li.addEventListener('click', () => {
+            li.addEventListener('click', (element) => {
+                document.querySelectorAll('.selected').forEach(element => element.classList.remove('selected'))
+                li.classList.add('selected');
                 currentCalendar = calendar;
                 fullCalendar = initializeCalendar(currentCalendar.events, userCalendars.id);
             });
