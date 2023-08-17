@@ -141,6 +141,10 @@ class Webserver {
             return reply.status(404).send({ error: 'Calendar not found' });
         }
 
+        if(calendar.right === "READ") {
+            return reply.status(403).send({ error: 'You don\'t have the right to update this calendar' });
+        }
+
         if (typeof eventData === 'string' && eventData.startsWith("BEGIN:VCALENDAR")) {
             // Handle ICS data
             let jcalData = Ical.parse(eventData);
@@ -191,7 +195,7 @@ class Webserver {
                 await calendar.addEvent(newEvent);
             }
         } else {
-            return reply.status(400).send({ message: 'Invalid data format' });
+            return reply.status(400).send({ error: 'Invalid data format' });
         }
 
         reply.send({ message: 'Calendar updated successfully' });

@@ -12,14 +12,18 @@ model Calendar {
   id              String                       @id @default(uuid())
   name            String?
   type            String                       @default("OTHER")
-  url             String?   
-  syncExpressionCron String?                      @default("0 0 * * *")
+  url             String?
+  color           String?                      @default("#000000")
+  visibility      String                      @default("PUBLIC")
+  right           String                      @default("WRITE") 
+  syncExpressionCron String?                    @default("0 0 * * *")
   createdAt       DateTime                     @default(now())
   updatedAt       DateTime                     @updatedAt
   CalendarEventAssociations CalendarEventAssociation[]
   parentCalendarId String?                     @map("parent_calendar_id")
   parentCalendar   Calendar?   @relation("CalendarToCalendar", fields: [parentCalendarId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   subCalendars     Calendar[] @relation("CalendarToCalendar")
+  calendarUsersAssociations    CalendarUserAssociation[]
 
   @@index([id])
 }
@@ -41,7 +45,7 @@ model Event {
   geo         String?
   description String?
   url         String?
-  CalendarEventAssociations CalendarEventAssociation[]
+  CalendarEventAssociations CalendarEventAssociation[] 
 
   @@index([id])
 }
@@ -53,4 +57,25 @@ model CalendarEventAssociation {
   calendar   Calendar  @relation(fields: [calendarId], references: [id])
 
   @@id([eventId, calendarId])
+}
+
+model User {
+  id          String          @id @default(uuid())
+  username    String
+  token       String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  deletedAt   DateTime?                    
+  CalendarUsersAssociations CalendarUserAssociation[]
+
+  @@index([id])
+}
+
+model CalendarUserAssociation {
+  userId      String
+  calendarId  String
+  user        User     @relation(fields: [userId], references: [id])
+  calendar    Calendar @relation(fields: [calendarId], references: [id])
+
+  @@id([userId, calendarId])
 }

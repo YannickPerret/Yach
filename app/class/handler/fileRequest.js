@@ -25,7 +25,6 @@ class FileRequest extends ParseData {
         
         switch (this.getExtension()) {
             case 'ics':
-                console.log("Parsing ICS");
                 events = await this.parseDataICS(data);
                 break;
             case 'json':
