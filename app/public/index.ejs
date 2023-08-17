@@ -1,120 +1,269 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>Yach - <%= title %></title>
-    <link rel="manifest" href="/manifest.json">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta charset="UTF-8">
-    <meta name="theme-color" content="#000000">
-  </head>
+
+<head>
+  <title>Yach - <%= title %>
+  </title>
+  <link rel="manifest" href="/manifest.json">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <meta name="theme-color" content="#000000">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css?family=Raleway:400,700');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Raleway, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(90deg, #C7C5F4, #776BCC);
+    }
+
+    .container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+
+    .screen {
+      background: linear-gradient(90deg, #5D54A4, #7C78B8);
+      position: relative;
+      height: 600px;
+      width: 360px;
+      box-shadow: 0px 0px 24px #5C5696;
+    }
+
+    .screen__content {
+      z-index: 1;
+      position: relative;
+      height: 100%;
+    }
+
+    .screen__background {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 0;
+      -webkit-clip-path: inset(0 0 0 0);
+      clip-path: inset(0 0 0 0);
+    }
+
+    .screen__background__shape {
+      transform: rotate(45deg);
+      position: absolute;
+    }
+
+    .screen__background__shape1 {
+      height: 520px;
+      width: 520px;
+      background: #FFF;
+      top: -50px;
+      right: 120px;
+      border-radius: 0 72px 0 0;
+    }
+
+    .screen__background__shape2 {
+      height: 220px;
+      width: 220px;
+      background: #6C63AC;
+      top: -172px;
+      right: 0;
+      border-radius: 32px;
+    }
+
+    .screen__background__shape3 {
+      height: 540px;
+      width: 190px;
+      background: linear-gradient(270deg, #5D54A4, #6A679E);
+      top: -24px;
+      right: 0;
+      border-radius: 32px;
+    }
+
+    .screen__background__shape4 {
+      height: 400px;
+      width: 200px;
+      background: #7E7BB9;
+      top: 420px;
+      right: 50px;
+      border-radius: 60px;
+    }
+
+    .login {
+      width: 320px;
+      padding: 30px;
+      padding-top: 156px;
+    }
+
+    .login__field {
+      padding: 20px 0px;
+      position: relative;
+    }
+
+    .login__icon {
+      position: absolute;
+      top: 30px;
+      color: #7875B5;
+    }
+
+    .login__input {
+      border: none;
+      border-bottom: 2px solid #D1D1D4;
+      background: none;
+      padding: 10px;
+      padding-left: 24px;
+      font-weight: 700;
+      width: 75%;
+      transition: .2s;
+    }
+
+    .login__input:active,
+    .login__input:focus,
+    .login__input:hover {
+      outline: none;
+      border-bottom-color: #6A679E;
+    }
+
+    .login__submit {
+      background: #fff;
+      font-size: 14px;
+      margin-top: 30px;
+      padding: 16px 20px;
+      border-radius: 26px;
+      border: 1px solid #D4D3E8;
+      text-transform: uppercase;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      width: 100%;
+      color: #4C489D;
+      box-shadow: 0px 2px 2px #5C5696;
+      cursor: pointer;
+      transition: .2s;
+    }
+
+    .login__submit:active,
+    .login__submit:focus,
+    .login__submit:hover {
+      border-color: #6A679E;
+      outline: none;
+    }
+
+    .button__icon {
+      font-size: 24px;
+      margin-left: auto;
+      color: #7875B5;
+    }
+
+    .social-login {
+      position: absolute;
+      height: 140px;
+      width: 160px;
+      text-align: center;
+      bottom: 0px;
+      right: 0px;
+      color: #fff;
+    }
+
+    .social-icons {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .social-login__icon {
+      padding: 20px 10px;
+      color: #fff;
+      text-decoration: none;
+      text-shadow: 0px 0px 8px #7875B5;
+    }
+
+    .social-login__icon:hover {
+      transform: scale(1.5);
+    }
+  </style>
+</head>
+
 <body>
 
-  <div id="error"></div>
-<form method="post" enctype="multipart/form-data">
-  <h2>User informations</h2>
-  <label>Username (required)</label><input type="text" name="username" id="username" /><br>
+  <div class="container">
+    <div class="screen">
+      <div class="screen__content">
+        <form class="login" id="form-login" enctype="application/x-www-form-urlencoded">
+          <div class="login__field">
+            <i class="login__icon fas fa-user"></i>
+            <input type="text" class="login__input" placeholder="Username">
+          </div>
+          <div class="login__field">
+            <i class="login__icon fas fa-lock"></i>
+            <input type="password" class="login__input" placeholder="Password">
+          </div>
+          <button class="button login__submit">
+            <span class="button__text">Log In Now</span>
+            <i class="button__icon fas fa-chevron-right"></i>
+          </button>
+        </form>
+        <div class="social-login">
+          <h3>log in via</h3>
+          <div class="social-icons">
+            <a href="#" class="social-login__icon fab fa-instagram"></a>
+            <a href="#" class="social-login__icon fab fa-facebook"></a>
+            <a href="#" class="social-login__icon fab fa-twitter"></a>
+          </div>
+        </div>
+      </div>
+      <div class="screen__background">
+        <span class="screen__background__shape screen__background__shape4"></span>
+        <span class="screen__background__shape screen__background__shape3"></span>
+        <span class="screen__background__shape screen__background__shape2"></span>
+        <span class="screen__background__shape screen__background__shape1"></span>
+      </div>
+    </div>
+  </div>
 
-  <h2>Create a new Calendar</h2>
-  <label>Upload calendar : </label><input type="file" name="file" id="file" /><br>  
-  <label for="pathUrl">Or by URL</label>
-  <input type="text" name="calendarUrl" id="pathUrl" placeholder="https://exemple.com/calendar.ics" /><br>
-  <label>Calendar type : </label>
-  <select name="type">
-    <option value="PERSONAL">Personal</option>
-    <option value="PROFESSIONAL">Professional</option>
-    <option value="OTHER">Other</option>
-  </select><br>
-  <label>Calendar name : </label><input type="text" name="name" id="name" /><br>
+</body>
 
-  <h2>Select your calendars :</h2>
-  <% if (calendars.length === 0) { %>
-    <p>Don't have calendars available</p>
-  <% } else { %>
-    <h3>Epistec team</h3>
-    <% calendars.forEach(function(calendar) { %>
-        <% if (calendar.type == 'PERSONAL') { %>
-          <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
-          <label for="<%= calendar.id %>"><a href="/calendar/<%= calendar.id %>"><%= calendar.name %></a></label><br>
-        <% } %>
-    <% }); %>
+<script defer>
+  document.addEventListener("DOMContentLoaded", () => {
+    if (localStorage.getItem('token')) {
+      window.location.href = '/dashboard';
+    }
+  })
 
-    <h3>Epsitec calendar</h3>
-    <% calendars.forEach(function(calendar) { %>
-        <% if (calendar.type == 'PROFESSIONAL') { %>
-          <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
-          <label for="<%= calendar.id %>"><a href="/calendar/<%= calendar.id %>"><%= calendar.name %></a></label><br>
-        <% } %>
-    <% }); %>
-
-
-  <h3>Others calendar</h3>
-    <% calendars.forEach(function(calendar) { %>
-        <% if (calendar.type == 'OTHER') { %>
-          <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
-          <label for="<%= calendar.id %>"><a href="/calendar/<%= calendar.id %>"><%= calendar.name %></a></label><br>
-        <% } %>
-    <% }); %>
-    <% } %>
-
-  <h3>Shared Calendars (Only check here)</h3>
-  <% calendars.forEach(function(calendar) { %>
-    <% if (calendar.type == 'SHARED') { %>
-      <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
-      <label for="<%= calendar.id %>"><a href="/calendar/<%= calendar.id %>"><%= calendar.name %></a></label><br>
-    <% } %>
-  <% }); %>
-  <br />
-  <input type="submit" value="Submit">
-</form>
-
-<script >
- document.addEventListener("DOMContentLoaded", () => {
-    const form = document.querySelector('form');
-    const errorDiv = document.querySelector('#error');
-    const fileInput = document.querySelector('#file');
-    const pathUrl = document.querySelector('#pathUrl');
-
-    fileInput.addEventListener('change', () => {
-      if (fileInput.value) {
-        pathUrl.disabled = true;
-      } else {
-        pathUrl.disabled = false;
+  const formLogin = document.getElementById('form-login');
+  formLogin.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = formLogin.querySelector('input[type="text"]').value;
+    const password = formLogin.querySelector('input[type="password"]').value;
+    const data = {
+      username,
+      password
+    };
+    fetch('/api/v1/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+        window.location.href = data.redirectUrl;
+        } else {
+          console.error(data.error)
       }
-    });
-
-    pathUrl.addEventListener('change', () => {
-      if (pathUrl.value) {
-        fileInput.disabled = true;
-      } else {
-        fileInput.disabled = false;
-      }
-    });
-    
-    form.addEventListener("submit", (e) => {
-      e.preventDefault();
-      const formData = new FormData(form);
-      const url = '/api/v1/calendar';
-      const options = {
-        method: 'POST',
-        body: formData
-      };
-
-
-      fetch(url, options)
-        .then((response) => {
-          if (response.ok) {
-            return response.json();
-          }   
-        })
-        .then((data) => {
-          window.location.href = data.url;
-        })
-        .catch((err) => {
-          console.error(err);
-          errorDiv.textContent = err.error || 'Something went wrong!';
-        });
-    });
+    })
+      .catch(err => console.log(err));
   });
 </script>
-</body>
+
 </html>

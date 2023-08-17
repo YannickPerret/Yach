@@ -9,6 +9,7 @@ const fs = require('fs')
 const Calendar = require('./calendar');
 const Event = require('./event');
 const User = require('./user');
+const Auth = require('./auth');
 
 const Ical = require('./adapter/ical');
 
@@ -99,7 +100,6 @@ class Webserver {
         }
     }
 
-    // Methodes
     getCalendars(req, res) {
 
     }
@@ -341,12 +341,34 @@ class Webserver {
         }
     }
 
-    /* WEB INTERFACE */
+    /**** AUTHENTIFICATION *******/
+
+    async login(req, reply) {
+        const { username, password } = req.body;
+
+        const token = await Auth.login(username, password);
+
+        if (!token) {
+            return reply.status(400).send({ error: 'Username or password incorrect' });
+        }
+
+        reply.header('Authorization', `Bearer ${token}`);
+
+        return { token, redirectUrl: `/users/${username}/calendars` };
+    }
+
+    /****** WEB INTERFACE ********/
 
     async getHome(req, reply) {
-        let calendars = await Calendar.getAll();
         return reply.status(200).view('index.ejs', {
-            title: 'Home Page',
+            title: 'Yach - Se connecter',
+        });
+    }
+
+    async getDashboard(req, reply) {
+        let calendars = await Calendar.getAll();
+        return reply.status(200).view('dashboard.ejs', {
+            title: 'Dashboard Calendrier',
             calendars: calendars,
         });
     }

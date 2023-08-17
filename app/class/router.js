@@ -15,10 +15,13 @@ module.exports = (app, handlers, upload) => {
           handler: handlers.propfindCalendar  
       });
 
+      instance.post('/login', handlers.login);
+
       next();
   }, { prefix: '/api/v1' });
 
   app.get('/', handlers.getHome); // A terme on a le login ici
+  app.get('/dashboard', handlers.getDashboard); // A terme on a le login ici
   app.get('/calendar/:id', handlers.getWebCalendarById); // visualisation du calendrier if public
   app.get('/calendar', handlers.getWebCalendarById); // Visualisation du calendrier vide
 
