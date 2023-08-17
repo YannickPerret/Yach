@@ -197,124 +197,130 @@ class Webserver {
         reply.send({ message: 'Calendar updated successfully' });
     }
 
-    async submitCalendar(req, reply) {
-        const data = req.file;
-        const inputCalendarsSelected = req.body.calendars;
-        const inputCalendarUrl = req.body.calendarUrl;
-        const typeCalendar = ["PROFESSIONAL", "PERSONAL", "OTHER"].includes(req.body.type) ? req.body.type : "OTHER";
-        const nameCalendar = req.body.name || "Yoda Default";
+    submitCalendar = async (req, reply) => {
+        const { file: data, body: { calendars: inputCalendarsSelected, calendarUrl: inputCalendarUrl, type: typeCalendarInput, name: nameCalendarInput, username } } = req;
 
-        const user = await User.getByUsername(req.body.username);
+        const typeCalendar = ["PROFESSIONAL", "PERSONAL", "OTHER"].includes(typeCalendarInput) ? typeCalendarInput : "OTHER";
+        const nameCalendar = nameCalendarInput || "Yoda Default";
+        let outputCalendar;
+
+
+        const user = await User.getByUsername(username);
         if (!user) {
             return reply.status(400).send({ error: 'You are not authorized' });
         }
-
-        let selectedCalendars = [];
-        let filePath;
-        let outputCalendar;
 
         if (data && inputCalendarUrl) {
             return reply.status(400).send({ error: 'You can\'t upload a file and add a calendar url at the same time' });
         }
 
-        if (inputCalendarsSelected && Array.isArray(inputCalendarsSelected) && inputCalendarsSelected.length > 0) {
-            selectedCalendars = inputCalendarsSelected;
-        }
+        const selectedCalendars = inputCalendarsSelected && Array.isArray(inputCalendarsSelected) ? inputCalendarsSelected : [];
 
         if (data) {
-            filePath = data.path;
-
-            const uploadCalendar = new Calendar({
-                source: filePath,
-                format: 'ics',
-                type: typeCalendar,
-                name: nameCalendar,
-                visible: "PUBLIC",
-                rights: "WRITE",
-                users: [user]
-            });
-
-            console.log("Upload calendar:", uploadCalendar)
-
-            await uploadCalendar.persist();
-            await uploadCalendar.parseEvents();
-
-            for (const event of uploadCalendar.events) {
-                event.calendarId = uploadCalendar.id;
-                await event.persist();
-            }
-
-            selectedCalendars.push(filePath);
-            outputCalendar = uploadCalendar;
-
-            fs.unlink(filePath, (err) => {
-                if (err) {
-                    console.error(err);
-                    return;
-                }
-            });
+            outputCalendar = await this.handleFileUpload(data, typeCalendar, nameCalendar, user);
+            selectedCalendars.push(outputCalendar.id);
         }
 
-        if (inputCalendarUrl && typeof inputCalendarUrl === 'string' && inputCalendarUrl.length > 0) {
-            const urlCalendar = new Calendar({
-                source: inputCalendarUrl,
-                format: 'ics',
-                type: typeCalendar,
-                name: nameCalendar,
-                url: inputCalendarUrl,
-                visible: "PUBLIC",
-                right: "READ",
-                users: [user]
-            });
-
-            await urlCalendar.persist();
-            urlCalendar.addToTaskScheduler();
-            await urlCalendar.parseEvents();
-
-            for (const event of urlCalendar.events) {
-                event.calendarId = urlCalendar.id;
-                await event.persist();
-            }
-
-            selectedCalendars.push(urlCalendar.id);
-            outputCalendar = urlCalendar;
+        if (inputCalendarUrl) {
+            outputCalendar = await this.handleUrlCalendar(inputCalendarUrl, typeCalendar, nameCalendar, user);
+            selectedCalendars.push(outputCalendar.id);
         }
 
-
-        if (Array.isArray(selectedCalendars) && selectedCalendars.length > 1) {
-            const newParentCalendar = new Calendar({ 
-                name: nameCalendar, 
-                type: "SHARED", 
-                visible: "PUBLIC", 
-            });
-        
-            if(selectedCalendars.some((calendarId) => {
-                const calendarTemp = Calendar.getById(calendarId);
-                
-            }))
-
-            await newParentCalendar.persist();
-
-
-            for (const selectedCalendar of selectedCalendars) {
-                const calendar = await Calendar.getById(selectedCalendar);
-                if (calendar.url !== null) {
-                    newParentCalendar.right = "READ"
-                    await newParentCalendar.persist();
-                }
-
-                calendar.parentCalendarId = newParentCalendar.id;
-                await calendar.persist();
-            }
-
-            outputCalendar = newParentCalendar;
-
+        if (selectedCalendars.length > 1) {
+            outputCalendar = await this.handleMultipleCalendars(selectedCalendars, nameCalendar);
         } else if (!data && !inputCalendarUrl) {
             return reply.status(400).send({ error: 'No calendars selected or uploaded' });
         }
 
         reply.send({ url: `${process.env.ENDPOINT_URL}:${process.env.ENDPOINT_PORT}/api/v1/calendar/${outputCalendar.id}` });
     }
+
+    async handleFileUpload(data, typeCalendar, nameCalendar, user) {
+        console.log("File upload request received");
+        const filePath = data.path;
+
+        const uploadCalendar = new Calendar({
+            source: filePath,
+            format: 'ics',
+            type: typeCalendar,
+            name: nameCalendar,
+            visible: "PUBLIC",
+            right: "WRITE",
+            users: [user]
+        });
+
+        await uploadCalendar.persist();
+        await uploadCalendar.parseEvents();
+
+        for (const event of uploadCalendar.events) {
+            event.calendarId = uploadCalendar.id;
+            await event.persist();
+        }
+
+        /*Je garde si un jour prisma fonctionne avec les promise.all pour sqlite*/
+        /*
+        const eventPromises = uploadCalendar.events.map(event => {
+            event.calendarId = uploadCalendar.id;
+            return event.persist();
+        });
+
+        await Promise.all(eventPromises);*/
+
+        fs.unlink(filePath, (err) => {
+            if (err) {
+                console.error(err);
+            }
+        });
+
+        return uploadCalendar;
+    }
+
+    async handleUrlCalendar(inputCalendarUrl, typeCalendar, nameCalendar, user) {
+        const urlCalendar = new Calendar({
+            source: inputCalendarUrl,
+            format: 'ics',
+            type: typeCalendar,
+            name: nameCalendar,
+            url: inputCalendarUrl,
+            visible: "PUBLIC",
+            right: "READ",
+            users: [user]
+        });
+
+        await urlCalendar.persist();
+        urlCalendar.addToTaskScheduler();
+        await urlCalendar.parseEvents();
+
+        for (const event of urlCalendar.events) {
+            event.calendarId = urlCalendar.id;
+            await event.persist();
+        }
+        
+        return urlCalendar;
+    }
+
+    async handleMultipleCalendars(selectedCalendars, nameCalendar) {
+        const newParentCalendar = new Calendar({
+            name: nameCalendar,
+            type: "SHARED",
+            visible: "PUBLIC",
+        });
+    
+        await newParentCalendar.persist();
+    
+        for (const selectedCalendar of selectedCalendars) {
+            const calendar = await Calendar.getById(selectedCalendar);
+            if (calendar.url) {
+                newParentCalendar.right = "READ";
+            }
+            calendar.parentCalendarId = newParentCalendar.id;
+            await calendar.persist();
+        }
+    
+        return newParentCalendar;
+    }
+    
+
 
     async removeCalendar(req, reply) {
         const id = req.params.id
@@ -341,9 +347,9 @@ class Webserver {
         if (!user) {
             return reply.status(404).send({ error: 'User not found' });
         }
-    
+
         let calendars = await user.getCalendars();
-    
+
         return reply.status(200).view('calendar.ejs', {
             title: 'Calendars Page',
             calendars: calendars,
@@ -354,17 +360,17 @@ class Webserver {
     async getUserCalendarById(req, reply) {
         let username = req.params.id;
         let calendarId = req.params.calendarId;
-        
+
         let user = await User.getByUsername(username);
         if (!user) {
             return reply.status(404).send({ error: 'User not found' });
         }
-    
+
         let calendar = await Calendar.getById(calendarId);
         if (!calendar) {
             return reply.status(404).send({ error: 'Calendar not found' });
         }
-    
+
         let calendars = await user.getCalendarWithEvents();
 
         return reply.status(200).view('calendar.ejs', {
@@ -373,7 +379,7 @@ class Webserver {
             user: user,
         });
     }
-    
+
     async getUserCalendarEvents(req, reply) {
         let id = req.params.id;
         let calendarId = req.params.calendarId;
@@ -397,7 +403,7 @@ class Webserver {
         let calendarId = req.params.calendarId;
         let eventId = req.params.eventId;
         let calendar = []
-        
+
         if (id) {
             calendar = await Calendar.getById(calendarId);
             if (!calendar) {
