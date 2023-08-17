@@ -1,545 +1,578 @@
-<!DOCTYPE html>
-<html lang="en">
+    <!DOCTYPE html>
+    <html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-    <link rel="manifest" href="/manifest.json">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Document</title>
+        <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+        <link rel="manifest" href="/manifest.json">
 
-    <style>
-        .container {
-            display: flex;
-            width: 100%;
-            height: 100vh;
-            overflow-y: hidden;
-        }
+        <style>
+            .container {
+                display: flex;
+                width: 100%;
+                height: 100vh;
+                overflow-y: hidden;
+            }
 
-        /* Sidebar styles */
-        .sidebar {
-            position: relative;
-            width: 15%;
-            background-color: #f7f7f7;
-            padding: 20px;
-            border-right: 1px solid #ddd;
-            height: 100vh;
-            overflow-y: auto;
-        }
+            /* Sidebar styles */
+            .sidebar {
+                position: relative;
+                width: 15%;
+                background-color: #f7f7f7;
+                padding: 20px;
+                border-right: 1px solid #ddd;
+                height: 100vh;
+                overflow-y: auto;
+            }
 
-        .selected {
-            font-weight: bold;
-            background-color: #eee;
-        }
+            .selected {
+                font-weight: bold;
+                background-color: #eee;
+            }
 
-        .sidebar-header {
-            height: 4%;
-        }
+            .sidebar-header {
+                height: 4%;
+            }
 
-        #toggleSidebar {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: none;
-            border: none;
-            font-size: 20px;
-            cursor: pointer;
-        }
-
-
-        .sidebar-collapsed {
-            width: 50px !important;
-            overflow: hidden;
-        }
-
-        #createCalendarBtn {
-            display: block;
-            background-color: #4285f4;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            margin-bottom: 20px;
-            cursor: pointer;
-            border-radius: 5px;
-            font-size: 16px;
-        }
-
-        #createCalendarBtn:hover {
-            background-color: #357ab8;
-        }
-
-        .sidebar.hide-content .sidebar-content {
-            display: none;
-        }
+            #toggleSidebar {
+                position: absolute;
+                top: 10px;
+                right: 10px;
+                background: none;
+                border: none;
+                font-size: 20px;
+                cursor: pointer;
+            }
 
 
-        /* Calendar styles */
+            .sidebar-collapsed {
+                width: 50px !important;
+                overflow: hidden;
+            }
+
+            #createCalendarBtn {
+                display: block;
+                background-color: #4285f4;
+                color: #fff;
+                border: none;
+                padding: 10px 20px;
+                margin-bottom: 20px;
+                cursor: pointer;
+                border-radius: 5px;
+                font-size: 16px;
+            }
+
+            #createCalendarBtn:hover {
+                background-color: #357ab8;
+            }
+
+            .sidebar.hide-content .sidebar-content {
+                display: none;
+            }
+
+            .sidebar-userCalendars{
+                display : flex;
+                flex-direction: column;
+                gap : 15px;
+                list-style-type: none;
+                padding: 0;
+                margin: 0;
+            }
 
 
-        .calendar-container {
-            width: 85%;
-            overflow-y: auto;
-            height: calc(100vh - 60px);
-            padding-left: 10px;
-        }
-
-        #calendar {
-            max-width: 100%;
-            margin: 0 auto;
-        }
+            /* Calendar styles */
 
 
-        /* Modal styles */
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            overflow: auto;
-            background-color: rgba(0, 0, 0, 0.4);
-            z-index: 1000;
-        }
+            .calendar-container {
+                width: 85%;
+                overflow-y: auto;
+                height: calc(100vh - 60px);
+                padding-left: 10px;
+            }
 
-        .modal-content {
-            display: flex;
-            flex-direction: column;
-            background-color: #fefefe;
-            margin: 5% auto;
-            padding: 30px;
-            border: 1px solid #888;
-            width: 60%;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-            font-size: 18px;
-
-        }
-
-        .modal-content label {
-            display: block;
-            margin-bottom: 10px;
-            margin-top: 20px;
-            flex-shrink: 0;
-            /* Empêche le rétrécissement des labels */
-        }
-
-        .modal-content input[type="text"],
-        .modal-content input[type="datetime-local"],
-        .modal-content textarea {
-            width: 100%;
-            padding: 10px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 16px;
-            flex-grow: 1;
-            /* Permet à l'input de prendre tout l'espace disponible */
-        }
-
-        .modal-content input[type="submit"] {
-            padding: 10px 20px;
-            background-color: #4285f4;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            margin-top: 20px;
-        }
-
-        .modal-content input[type="submit"]:hover {
-            background-color: #357ab8;
-        }
-
-        /* Flexbox pour les éléments du formulaire */
-        .eventFormModal>div {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            width: 100%;
-        }
-
-        .btnRemoveCalendar {
-            width: 10%;
-            height: 10%;
-        }
-
-        /* Pour les champs date */
-        .eventFormModal>div:nth-child(4) {
-            flex-direction: row;
-        }
-
-        .eventFormModal>div:nth-child(4)>div {
-            display: flex;
-            width: 100%;
-        }
+            #calendar {
+                max-width: 100%;
+                margin: 0 auto;
+            }
 
 
-        .close-btn {
-            color: #aaa;
-            float: right;
-            font-size: 28px;
-            font-weight: bold;
-            cursor: pointer;
-        }
+            /* Modal styles */
+            .modal {
+                display: none;
+                position: fixed;
+                z-index: 1;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                overflow: auto;
+                background-color: rgba(0, 0, 0, 0.4);
+                z-index: 1000;
+            }
 
-        .close-btn:hover,
-        .close-btn:focus {
-            color: black;
-            text-decoration: none;
-            cursor: pointer;
-        }
-    </style>
-</head>
+            .modal-content {
+                display: flex;
+                flex-direction: column;
+                background-color: #fefefe;
+                margin: 5% auto;
+                padding: 30px;
+                border: 1px solid #888;
+                width: 60%;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                border-radius: 8px;
+                font-size: 18px;
 
-<body>
-    <div class="container">
-        <div class="sidebar">
-            <div class="sidebar-header">
-                <button id="toggleSidebar">☰</button>
+            }
+
+            .modal-content label {
+                display: block;
+                margin-bottom: 10px;
+                margin-top: 20px;
+                flex-shrink: 0;
+                /* Empêche le rétrécissement des labels */
+            }
+
+            .modal-content input[type="text"],
+            .modal-content input[type="datetime-local"],
+            .modal-content textarea {
+                width: 100%;
+                padding: 10px;
+                margin-top: 5px;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                font-size: 16px;
+                flex-grow: 1;
+                /* Permet à l'input de prendre tout l'espace disponible */
+            }
+
+            .modal-content input[type="submit"] {
+                padding: 10px 20px;
+                background-color: #4285f4;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 16px;
+                margin-top: 20px;
+            }
+
+            .modal-content input[type="submit"]:hover {
+                background-color: #357ab8;
+            }
+
+            /* Flexbox pour les éléments du formulaire */
+            .eventFormModal>div {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+            }
+
+            .btnRemoveCalendar {
+                width: 10%;
+                height: 10%;
+            }
+
+            /* Pour les champs date */
+            .eventFormModal>div:nth-child(4) {
+                flex-direction: row;
+            }
+
+            .eventFormModal>div:nth-child(4)>div {
+                display: flex;
+                width: 100%;
+            }
+
+
+            .close-btn {
+                color: #aaa;
+                float: right;
+                font-size: 28px;
+                font-weight: bold;
+                cursor: pointer;
+            }
+
+            .close-btn:hover,
+            .close-btn:focus {
+                color: black;
+                text-decoration: none;
+                cursor: pointer;
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="container">
+            <div class="sidebar">
+                <div class="sidebar-header">
+                    <button id="toggleSidebar">☰</button>
+                </div>
+                <div class="sidebar-content">
+                    <a href="/"><button id="createCalendarBtn">Créer un calendrier</button></a>
+                    <div id="miniCalendar"></div>
+                    <h3>My Calendars</h3>
+                    <ul id="userCalendars" class="sidebar-userCalendars">
+                    </ul>
+
+                    <button id="settingsBtn">Settings</button>
+                </div>
             </div>
-            <div class="sidebar-content">
-                <a href="/"><button id="createCalendarBtn">Créer un calendrier</button></a>
-                <div id="miniCalendar"></div>
-                <h3>My Calendars</h3>
-                <ul id="userCalendars">
-                    <% if (typeof calendars !=='undefined' ) { %>
-                        <li>
-                            <a href="/users/<%= user.username %>/calendars/<%= calendars.id %>" <% if (typeof
-                                currentCalendar !=='undefined' && calendar.id===currentCalendar.id) {
-                                %>class="selected"<% } %>>
-                                    <%= calendars.name %>
-                            </a>
-                        </li>
-                    <% } %>
-                </ul>
+            <div class="calendar-container">
+                <div id="calendar-nav">
+                    <button onclick="changeView('dayGridMonth')">Month</button>
+                    <button onclick="changeView('timeGridWeek')">Week</button>
+                    <button onclick="changeView('timeGridDay')">Day</button>
+                </div>
 
-                <button id="settingsBtn">Settings</button>
+                <div id='calendar'></div>
             </div>
         </div>
-        <div class="calendar-container">
-            <div id="calendar-nav">
-                <button onclick="changeView('dayGridMonth')">Month</button>
-                <button onclick="changeView('timeGridWeek')">Week</button>
-                <button onclick="changeView('timeGridDay')">Day</button>
-            </div>
-
-            <div id='calendar'></div>
-        </div>
-    </div>
 
 
-    <div class="modal" id="eventModal">
-        <div class="modal-content">
-            <span class="close-btn" onclick="closeModal()">&times;</span>
-            <h2>Edit Event</h2>
-            <form id="eventForm" class="eventFormModal">
-                <div>
-                    <label for="calendarId">Calendar ID:</label>
-                    <input type="text" id="calendarId" name="calendarId" disabled>
-                </div>
-                <div>
-                    <label for="eventId">Event ID:</label>
-                    <input type="text" id="eventId" name="eventId" disabled>
-                </div>
-                <div>
-                    <label for="summary">Summary:</label>
-                    <input type="text" id="summary" name="summary">
-                </div>
-                <div>
+        <div class="modal" id="eventModal">
+            <div class="modal-content">
+                <span class="close-btn" onclick="closeModal()">&times;</span>
+                <h2>Edit Event</h2>
+                <form id="eventForm" class="eventFormModal">
                     <div>
-                        <label for="startDate">Start Date:</label>
-                        <input type="datetime-local" id="startDate" name="startDate">
+                        <label for="calendarId">Calendar ID:</label>
+                        <input type="text" id="calendarId" name="calendarId" disabled>
                     </div>
                     <div>
-                        <label for="endDate">End Date:</label>
-                        <input type="datetime-local" id="endDate" name="endDate">
+                        <label for="eventId">Event ID:</label>
+                        <input type="text" id="eventId" name="eventId" disabled>
                     </div>
-                </div>
-                <div>
-                    <label for="description">Description:</label>
-                    <textarea id="description" name="description"></textarea>
-                </div>
-                <div>
-                    <input type="submit" value="Update Event">
-                </div>
-            </form>
+                    <div>
+                        <label for="summary">Summary:</label>
+                        <input type="text" id="summary" name="summary">
+                    </div>
+                    <div>
+                        <div>
+                            <label for="startDate">Start Date:</label>
+                            <input type="datetime-local" id="startDate" name="startDate">
+                        </div>
+                        <div>
+                            <label for="endDate">End Date:</label>
+                            <input type="datetime-local" id="endDate" name="endDate">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="description">Description:</label>
+                        <textarea id="description" name="description"></textarea>
+                    </div>
+                    <div>
+                        <input type="submit" value="Update Event">
+                    </div>
+                </form>
+            </div>
         </div>
-    </div>
 
-    <div class="modal" id="settingsModal">
-        <label>URL public api ics</label>
+        <div class="modal" id="settingsModal">
+            <label>URL public api ics</label>
 
-        <button id="removeCalendar" class="btnRemoveCalendar">
-            Delete this calendar
-        </button>
-    </div>
-</body>
+            <button id="removeCalendar" class="btnRemoveCalendar">
+                Delete this calendar
+            </button>
+        </div>
+    </body>
 
-<script>
-    let fullCalendar;
-    let userCalendar
-    let user;
-    let events
-    const DOUBLE_CLICK_DELAY = 300;
-    let clickTimer = null;
+    <script>
+        let fullCalendar;
+        let userCalendar
+        let currentCalendar
+        let user;
+        let events
+        const DOUBLE_CLICK_DELAY = 300;
+        let clickTimer = null;
 
-    document.addEventListener('DOMContentLoaded', () => {
-        user = <%- JSON.stringify(user) %>;
-        userCalendars = <%- JSON.stringify(calendars) %>;
-        events = userCalendars.events;
+        document.addEventListener('DOMContentLoaded', () => {
+            user = <%- JSON.stringify(user) %>;
+            userCalendars = <%- JSON.stringify(calendars) %>;
+            loadUserCalendarList();
 
-        fullCalendar = initializeCalendar(events, userCalendars.id);
+            events = currentCalendar.events;
 
-        document.getElementById('createCalendarBtn').addEventListener('click', () => { });
-        document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
-    });
+            fullCalendar = initializeCalendar(events, userCalendars.id);
 
-    document.getElementById('eventForm').addEventListener('submit', async (data) => {
-        data.preventDefault();
+            document.getElementById('createCalendarBtn').addEventListener('click', () => { });
+            document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
+        });
 
-        const eventIdInput = document.getElementById('eventId').value;
-        const calendarIdInput = document.getElementById('calendarId').value;
-        const summaryInput = document.getElementById('summary').value;
-        const startDateInput = document.getElementById('startDate').value;
-        const endDateInput = document.getElementById('endDate').value;
-        const descriptionInput = document.getElementById('description').value;
+        const loadUserCalendarList = () => {
+            
+            if (userCalendars.length <= 0) {
+                // create li to show No Calendar Found
+                const li = document.createElement('li');
+                li.textContent = 'No Calendar Found';
+                document.getElementById('userCalendars').appendChild(li);
+                return;
+            }
 
-        if (new Date(startDateInput) >= new Date(endDateInput)) {
-            console.log("La date de début doit être inférieure à la date de fin !");
+            userCalendars.forEach(calendar => {
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                a.href = `/users/${user.username}/calendar/${calendar.id}`;
+                li.textContent = calendar.name;
+                li.addEventListener('click', () => {
+                    currentCalendar = calendar;
+                    console.log(currentCalendar)
+                    fullCalendar = initializeCalendar(currentCalendar.events, userCalendars.id);
+
+
+                    /*fullCalendar.getEvents().forEach(event => event.remove());
+                    fullCalendar.addEventSource(calendar.events);
+                    fullCalendar.render();*/
+                });
+                li.appendChild(a);
+                document.getElementById('userCalendars').appendChild(li);
+            });
         }
 
+        document.getElementById('eventForm').addEventListener('submit', async (data) => {
+            data.preventDefault();
 
-        if (doesEventOverlap(startDateInput, endDateInput)) {
-            console.log("Un événement existe déjà pour cette plage horaire!");
-        }
+            const eventIdInput = document.getElementById('eventId').value;
+            const calendarIdInput = document.getElementById('calendarId').value;
+            const summaryInput = document.getElementById('summary').value;
+            const startDateInput = document.getElementById('startDate').value;
+            const endDateInput = document.getElementById('endDate').value;
+            const descriptionInput = document.getElementById('description').value;
 
-        const event = {
-            eventId: eventIdInput,
-            calendarId: calendarIdInput || userCalendars.id,
-            summary: summaryInput,
-            startDate: startDateInput,
-            endDate: endDateInput,
-            description: descriptionInput,
-        };
+            if (new Date(startDateInput) >= new Date(endDateInput)) {
+                console.log("La date de début doit être inférieure à la date de fin !");
+            }
 
-        await submitEvent(event.calendarId, event);
 
-        closeModal();
-    });
+            if (doesEventOverlap(startDateInput, endDateInput)) {
+                console.log("Un événement existe déjà pour cette plage horaire!");
+            }
 
-    document.getElementById('settingsBtn').addEventListener('click', () => {
-        openModalSettings();
-    });
-
-    const generateRandomString = (length = 10) => {
-        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let result = '';
-        for (let i = 0; i < length; i++) {
-            result += characters.charAt(Math.floor(Math.random() * characters.length));
-        }
-        return result;
-    }
-
-    document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape') {
-            closeModal();
-        }
-    });
-    const changeView = (viewName) => {
-        fullCalendar.changeView(viewName);
-    };
-
-    const formatDateToDatetimeLocal = date => {
-        const pad = num => {
-            const norm = Math.floor(Math.abs(num));
-            return (norm < 10 ? '0' : '') + norm;
-        };
-
-        return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-    };
-
-    const toggleSidebar = () => {
-        const sidebar = document.querySelector('.sidebar');
-        const calendarContainer = document.querySelector('.calendar-container');
-
-        if (sidebar.classList.contains('sidebar-collapsed')) {
-            sidebar.classList.remove('sidebar-collapsed', 'hide-content');
-            calendarContainer.style.width = '80%';
-        } else {
-            sidebar.classList.add('sidebar-collapsed', 'hide-content');
-            calendarContainer.style.width = 'calc(100% - 50px)';
-        }
-    };
-
-    const updateEvent = async (info) => {
-        try {
-            const updatedData = {
-                id: info.event.id,
-                start: info.event.start.toISOString(),
-                end: info.event.end.toISOString(),
-                summary: info.event.title,
-                description: info.event.description
+            const event = {
+                eventId: eventIdInput,
+                calendarId: calendarIdInput || userCalendars.id,
+                summary: summaryInput,
+                startDate: startDateInput,
+                endDate: endDateInput,
+                description: descriptionInput,
             };
 
-            const response = await fetch(`/api/v1/calendar/${info.event.extendedProps.calendarId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(updatedData)
-            });
+            await submitEvent(event.calendarId, event);
 
-            const data = await response.json();
+            closeModal();
+        });
 
-            if (response.status !== 200) {
-                console.error(data.error);
-                info.revert();
+        document.getElementById('settingsBtn').addEventListener('click', () => {
+            openModalSettings();
+        });
+
+        const generateRandomString = (length = 10) => {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += characters.charAt(Math.floor(Math.random() * characters.length));
             }
-        } catch (err) {
-            console.error('Erreur lors de la mise à jour de l\'événement', err);
+            return result;
         }
-    }
 
-    const submitEvent = async (event) => {
-        const eventForm = document.getElementById('eventForm').value;
-        const idInput = document.getElementById('eventId').value;
-        const summaryInput = document.getElementById('summary').value;
-        const startDateInput = document.getElementById('startDate').value;
-        const endDateInput = document.getElementById('endDate').value;
-        const descriptionInput = document.getElementById('description').value;
-
-        const eventToUpdate = {
-            calendarId: event.calendarId || userCalendars.id,
-            id: idInput || generateRandomString(),
-            summary: summaryInput,
-            start: startDateInput,
-            end: endDateInput,
-            description: descriptionInput,
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                closeModal();
+            }
+        });
+        const changeView = (viewName) => {
+            fullCalendar.changeView(viewName);
         };
 
-        await fetch(`/api/v1/calendar/${userCalendars.id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(eventToUpdate),
-        })
-            .then(response => response.json())
-            .then(data => {
-                closeModal();
-            })
-            .catch(error => {
-                console.error(error);
-                alert('An error occurred while updating the event');
-            });
-    };
+        const formatDateToDatetimeLocal = date => {
+            const pad = num => {
+                const norm = Math.floor(Math.abs(num));
+                return (norm < 10 ? '0' : '') + norm;
+            };
 
-    //model for setting
-    const openModalSettings = async () => {
-        const modal = document.getElementById('settingsModal');
-        document.getElementById('removeCalendar').addEventListener("click", () => {
-            fetch(`/api/v1/calendar/${userCalendars.id}`, {
-                method: 'DELETE',
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+        };
+
+        const toggleSidebar = () => {
+            const sidebar = document.querySelector('.sidebar');
+            const calendarContainer = document.querySelector('.calendar-container');
+
+            if (sidebar.classList.contains('sidebar-collapsed')) {
+                sidebar.classList.remove('sidebar-collapsed', 'hide-content');
+                calendarContainer.style.width = '80%';
+            } else {
+                sidebar.classList.add('sidebar-collapsed', 'hide-content');
+                calendarContainer.style.width = 'calc(100% - 50px)';
+            }
+        };
+
+        const updateEvent = async (info) => {
+            try {
+                const updatedData = {
+                    id: info.event.id,
+                    start: info.event.start.toISOString(),
+                    end: info.event.end.toISOString(),
+                    summary: info.event.title,
+                    description: info.event.description
+                };
+
+                const response = await fetch(`/api/v1/calendar/${info.event.extendedProps.calendarId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(updatedData)
+                });
+
+                const data = await response.json();
+
+                if (response.status !== 200) {
+                    console.error(data.error);
+                    info.revert();
+                }
+            } catch (err) {
+                console.error('Erreur lors de la mise à jour de l\'événement', err);
+            }
+        }
+
+        const submitEvent = async (event) => {
+            const eventForm = document.getElementById('eventForm').value;
+            const idInput = document.getElementById('eventId').value;
+            const summaryInput = document.getElementById('summary').value;
+            const startDateInput = document.getElementById('startDate').value;
+            const endDateInput = document.getElementById('endDate').value;
+            const descriptionInput = document.getElementById('description').value;
+
+            const eventToUpdate = {
+                calendarId: event.calendarId || userCalendars.id,
+                id: idInput || generateRandomString(),
+                summary: summaryInput,
+                start: startDateInput,
+                end: endDateInput,
+                description: descriptionInput,
+            };
+
+            await fetch(`/api/v1/calendar/${userCalendars.id}`, {
+                method: 'PUT',
                 headers: {
-                    'Content-Type': 'application/json'
-                }
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(eventToUpdate),
             })
-        })
+                .then(response => response.json())
+                .then(data => {
+                    closeModal();
+                })
+                .catch(error => {
+                    console.error(error);
+                    alert('An error occurred while updating the event');
+                });
+        };
 
-        modal.style.display = 'flex';
-    };
+        //model for setting
+        const openModalSettings = async () => {
+            const modal = document.getElementById('settingsModal');
+            document.getElementById('removeCalendar').addEventListener("click", () => {
+                fetch(`/api/v1/calendar/${userCalendars.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+            })
 
-    const closeModalSettings = () => {
-        const modal = document.getElementById('settingsModal');
-        const settingsData = document.getElementById('settingsForm');
-        settingsData.reset()
-        modal.style.display = 'none';
-    };
+            modal.style.display = 'flex';
+        };
 
-    const openModal = async (eventOrDate) => {
-        const modal = document.getElementById('eventModal');
-        const calendarIdInput = document.getElementById('calendarId');
-        const eventIdInput = document.getElementById('eventId');
-        const summaryInput = document.getElementById('summary');
-        const startDateInput = document.getElementById('startDate');
-        const endDateInput = document.getElementById('endDate');
-        const descriptionInput = document.getElementById('description');
-        const eventForm = document.getElementById('eventForm');
+        const closeModalSettings = () => {
+            const modal = document.getElementById('settingsModal');
+            const settingsData = document.getElementById('settingsForm');
+            settingsData.reset()
+            modal.style.display = 'none';
+        };
 
-        calendarIdInput.value = userCalendars.id;
-        eventIdInput.value = eventOrDate.id || generateRandomString();
-        summaryInput.value = eventOrDate.title || '';
-        startDateInput.value = formatDateToDatetimeLocal(eventOrDate.start || new Date(eventOrDate));
-        endDateInput.value = formatDateToDatetimeLocal(eventOrDate.end || new Date(eventOrDate));
-        eventOrDate.extendedProps?.description === undefined ? descriptionInput.placeholder = 'Your description here' : descriptionInput.value = eventOrDate.extendedProps.description;
+        const openModal = async (eventOrDate) => {
+            const modal = document.getElementById('eventModal');
+            const calendarIdInput = document.getElementById('calendarId');
+            const eventIdInput = document.getElementById('eventId');
+            const summaryInput = document.getElementById('summary');
+            const startDateInput = document.getElementById('startDate');
+            const endDateInput = document.getElementById('endDate');
+            const descriptionInput = document.getElementById('description');
+            const eventForm = document.getElementById('eventForm');
 
-        modal.style.display = 'flex';
-    };
+            calendarIdInput.value = userCalendars.id;
+            eventIdInput.value = eventOrDate.id || generateRandomString();
+            summaryInput.value = eventOrDate.title || '';
+            startDateInput.value = formatDateToDatetimeLocal(eventOrDate.start || new Date(eventOrDate));
+            endDateInput.value = formatDateToDatetimeLocal(eventOrDate.end || new Date(eventOrDate));
+            eventOrDate.extendedProps?.description === undefined ? descriptionInput.placeholder = 'Your description here' : descriptionInput.value = eventOrDate.extendedProps.description;
 
-    const closeModal = () => {
-        const modal = document.getElementById('eventModal');
-        const eventData = document.getElementById('eventForm');
-        eventData.reset()
-        modal.style.display = 'none';
-    };
+            modal.style.display = 'flex';
+        };
 
-    const initializeCalendar = (events, calendarId) => {
+        const closeModal = () => {
+            const modal = document.getElementById('eventModal');
+            const eventData = document.getElementById('eventForm');
+            eventData.reset()
+            modal.style.display = 'none';
+        };
 
-        const calendarEl = document.getElementById('calendar');
-        const fullCalendar = new FullCalendar.Calendar(calendarEl, {
-            height: 'auto',
-            initialView: 'timeGridWeek',
-            editable: true,
-            selectable: true,
-            //timeZone: 'Europe/Zurich',
-            firstDay: 1,
-            eventClick: info => openModal(info.event),
-            eventDrop: info => userCalendars.rights === 'Write' && updateEvent(info),
-            dateClick: info => {
-                if (userCalendars.rights === 'Read') return;
-                if (clickTimer === null) {
-                    clickTimer = setTimeout(() => {
+        const initializeCalendar = (events, calendarId) => {
+
+            const calendarEl = document.getElementById('calendar');
+            const fullCalendar = new FullCalendar.Calendar(calendarEl, {
+                height: 'auto',
+                initialView: 'timeGridWeek',
+                editable: true,
+                selectable: true,
+                //timeZone: 'Europe/Zurich',
+                firstDay: 1,
+                eventClick: info => openModal(info.event),
+                eventDrop: info => userCalendars.rights === 'Write' && updateEvent(info),
+                dateClick: info => {
+                    if (userCalendars.rights === 'Read') return;
+                    if (clickTimer === null) {
+                        clickTimer = setTimeout(() => {
+                            clickTimer = null;
+                        }, DOUBLE_CLICK_DELAY);
+                    } else {
+                        clearTimeout(clickTimer);
                         clickTimer = null;
-                    }, DOUBLE_CLICK_DELAY);
-                } else {
-                    clearTimeout(clickTimer);
-                    clickTimer = null;
-                    openModal(info.dateStr);
-                }
-            },
-            eventResize: info => userCalendars.rights === 'Write' && updateEvent(info),
-            select: info => openModal(info),
-            events: events.map(event => ({
-                id: event.id,
-                title: event.summary,
-                start: event.start,
-                end: event.end,
-                calendarId: calendarId,
-                description: event.description
-            }))
+                        openModal(info.dateStr);
+                    }
+                },
+                eventResize: info => userCalendars.rights === 'Write' && updateEvent(info),
+                select: info => openModal(info),
+                events: events.map(event => ({
+                    id: event.id,
+                    title: event.summary,
+                    start: event.start,
+                    end: event.end,
+                    calendarId: calendarId,
+                    description: event.description
+                }))
 
-        });
+            });
 
-        fullCalendar.render();
-        return fullCalendar;
-    };
+            fullCalendar.render();
+            return fullCalendar;
+        };
 
-    const doesEventOverlap = (startDate, endDate) => {
-        const start = startDate;
-        const end = endDate;
+        const doesEventOverlap = (startDate, endDate) => {
+            const start = startDate;
+            const end = endDate;
 
-        return events.some(event => {
-            const eventStart = event.start;
-            const eventEnd = event.end;
-            return (start >= eventStart && start < eventEnd) ||
-                (end > eventStart && end <= eventEnd) ||
-                (start <= eventStart && end >= eventEnd);
-        });
-    };
+            return events.some(event => {
+                const eventStart = event.start;
+                const eventEnd = event.end;
+                return (start >= eventStart && start < eventEnd) ||
+                    (end > eventStart && end <= eventEnd) ||
+                    (start <= eventStart && end >= eventEnd);
+            });
+        };
 
-</script>
+    </script>
 
-</html>
+    </html>

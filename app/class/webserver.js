@@ -354,7 +354,7 @@ class Webserver {
             return reply.status(404).send({ error: 'User not found' });
         }
 
-        let calendars = await user.getCalendars();
+        let calendars = await user.getCalendarWithEvents();
 
         return reply.status(200).view('calendar.ejs', {
             title: 'Calendars Page',

@@ -2,7 +2,7 @@ const Database = require('./database');
 const Calendar = require('./calendar');
 
 class User {
-    
+
     constructor(config) {
         this.id = config.id;
         this.username = config.username;
@@ -92,13 +92,13 @@ class User {
                 }
             }
         })
-    
+
         if (!userWithCalendars || !userWithCalendars.CalendarUsersAssociations) return [];
-    
+
         const calendars = userWithCalendars.CalendarUsersAssociations.map(association => {
             return new Calendar(association.calendar);
         })
-    
+
         return calendars;
     }
 
@@ -122,22 +122,35 @@ class User {
                     }
                 }
             }
-        })
-
-        
+        });
     
-        if (!userWithCalendars || !userWithCalendars.CalendarUsersAssociations) return [];
-        const calendars = userWithCalendars.CalendarUsersAssociations.map(association => {
+        if (!userWithCalendars) return [];
+    
+        const calendars = [];
+        for (const association of userWithCalendars.CalendarUsersAssociations) {
             const calendarData = association.calendar;
+            
             // Converting CalendarEventAssociations to just events for the Calendar class
             if (calendarData.CalendarEventAssociations) {
                 calendarData.events = calendarData.CalendarEventAssociations.map(assoc => assoc.event);
                 delete calendarData.CalendarEventAssociations;
             }
-
-            return new Calendar(calendarData);
-        })
-
+    
+            let newCalendar = new Calendar(calendarData);
+    
+            // Get child calendars and their events if any.
+            const childCalendars = await newCalendar.getChildCalendars();
+            for (const childCalendar of childCalendars) {
+                const childEvents = await childCalendar.getEvents();
+                childEvents.forEach(event => event.calendarId = childCalendar.id);
+                newCalendar.events.push(...childEvents);
+            }
+    
+            newCalendar.events = newCalendar.events.filter((event, index, self) => self.findIndex(e => e.id === event.id) === index);
+    
+            calendars.push(newCalendar);
+        }
+    
         return calendars;
     }
     
