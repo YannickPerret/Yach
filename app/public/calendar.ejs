@@ -380,6 +380,7 @@
     });
     const changeView = (viewName) => {
         fullCalendar.changeView(viewName);
+        localStorage.setItem('lastCalendarView', viewName);
     };
 
     const formatDateToDatetimeLocal = date => {
@@ -529,10 +530,12 @@
 
     const initializeCalendar = (events, calendarId) => {
 
+        const lastView = localStorage.getItem('lastCalendarView') || 'timeGridWeek';
+
         const calendarEl = document.getElementById('calendar');
         const fullCalendar = new FullCalendar.Calendar(calendarEl, {
             height: 'auto',
-            initialView: 'timeGridWeek',
+            initialView: lastView,
             editable: true,
             selectable: true,
             //timeZone: 'Europe/Zurich',
