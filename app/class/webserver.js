@@ -227,7 +227,7 @@ class Webserver {
         }
 
         if (selectedCalendars.length > 1) {
-            outputCalendar = await this.handleMultipleCalendars(selectedCalendars, nameCalendar);
+            outputCalendar = await this.handleMultipleCalendars(selectedCalendars, nameCalendar, user);
         } else if (!data && !inputCalendarUrl) {
             return reply.status(400).send({ error: 'No calendars selected or uploaded' });
         }
@@ -299,13 +299,14 @@ class Webserver {
         return urlCalendar;
     }
 
-    async handleMultipleCalendars(selectedCalendars, nameCalendar) {
+    async handleMultipleCalendars(selectedCalendars, nameCalendar, user) {
         let updateParentCalendar = false;
 
         const ParentCalendar = new Calendar({
             name: nameCalendar,
             type: "SHARED",
             visible: "PUBLIC",
+            users: [user]
         });
     
         await ParentCalendar.persist();

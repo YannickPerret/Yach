@@ -145,10 +145,8 @@ class Calendar {
 
         console.log("Calendar persisted with id:", this.id);
 
-        if (this.type !== "SHARED") {
-            for (let user of this.users) {
-                await this.#associateUserWithCalendar(user.id);
-            }
+        for (let user of this.users) {
+            await this.#associateUserWithCalendar(user.id);
         }
     }
 
