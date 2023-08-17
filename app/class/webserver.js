@@ -104,7 +104,6 @@ class Webserver {
 
     }
 
-
     async getCalendarById(req, res) {
         let id = req.params.id;
 
@@ -264,7 +263,7 @@ class Webserver {
                 name: nameCalendar,
                 url: inputCalendarUrl,
                 visible: "PUBLIC",
-                rights: "READ",
+                right: "READ",
                 users: [user]
             });
 
@@ -287,17 +286,23 @@ class Webserver {
                 name: nameCalendar, 
                 type: "SHARED", 
                 visible: "PUBLIC", 
-                rights: "WRITE" 
             });
         
-            if (selectedCalendars.some(calendar => calendar.startsWith("http"))) {
-                newParentCalendar.rights = "READ";
-            }
+            if(selectedCalendars.some((calendarId) => {
+                const calendarTemp = Calendar.getById(calendarId);
+                
+            }))
 
             await newParentCalendar.persist();
 
+
             for (const selectedCalendar of selectedCalendars) {
                 const calendar = await Calendar.getById(selectedCalendar);
+                if (calendar.url !== null) {
+                    newParentCalendar.right = "READ"
+                    await newParentCalendar.persist();
+                }
+
                 calendar.parentCalendarId = newParentCalendar.id;
                 await calendar.persist();
             }
@@ -369,8 +374,6 @@ class Webserver {
         });
     }
     
-
-
     async getUserCalendarEvents(req, reply) {
         let id = req.params.id;
         let calendarId = req.params.calendarId;

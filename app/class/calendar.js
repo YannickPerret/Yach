@@ -15,7 +15,7 @@ const TaskScheduler = require('./taskScheduler');
  * @property {string} type
  * @property {string} [url]
  * @property {string} [visible]
- * @property {string} [rights]
+ * @property {string} [right]
  * @property {User[]} [users]
  * @property {string} [syncExpressionCron]
  * @property {string} [parentCalendarId]
@@ -39,7 +39,7 @@ class Calendar {
         this.type = config.type;
         this.url = config.url;
         this.visible = config.visible;
-        this.rights = config.rights;
+        this.right = config.right;
         this.users = config.users || [];
         this.syncExpressionCron = config.syncExpressionCron || '0 0 * * *';
         this.parentCalendarId = config.parentCalendarId;
@@ -128,6 +128,7 @@ class Calendar {
                 name: this.name,
                 type: this.type,
                 url: this.url,
+                right: this.right,
                 syncExpressionCron: this.syncExpressionCron,
                 parentCalendarId: this.parentCalendarId,
             },
@@ -136,6 +137,7 @@ class Calendar {
                 name: this.name,
                 type: this.type,
                 url: this.url,
+                right:this.right,
                 syncExpressionCron: this.syncExpressionCron,
                 parentCalendarId: this.parentCalendarId,
             }
@@ -285,6 +287,7 @@ class Calendar {
             throw error;
         }
     }
+
 
 
     /**
