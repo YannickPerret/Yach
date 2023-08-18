@@ -17,6 +17,9 @@ module.exports = (app, handlers, upload) => {
 
       instance.post('/login', handlers.login);
 
+      instance.post('/logout', handlers.logout);
+
+
       next();
   }, { prefix: '/api/v1' });
 
@@ -24,7 +27,7 @@ module.exports = (app, handlers, upload) => {
   app.get('/dashboard', handlers.getDashboard); // Création d'un calendrier
   app.get('/calendar/:id', handlers.getWebCalendarById); // visualisation du calendrier if public
   app.get('/calendar', handlers.getWebCalendarById); // Visualisation du calendrier vide
-  app.get('/logout', handlers.logout);
+  app.get('/logout', handlers.getLogout);
 
 
   app.get('/users/:id/calendars', handlers.getUserCalendars); // voir les calendriers de l'utilisateur

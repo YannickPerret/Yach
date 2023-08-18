@@ -32,6 +32,25 @@ class Auth {
 
         return user.token;
     }
+
+    //auth verify token
+    static async verifyToken(token) {
+        try {
+            const decoded = await jwt.verify(token, "epsitec");
+            const user = await User.getById(decoded.id);
+            return user;
+        } catch (e) {
+            return false;
+        }
+    }
+
+    //auth logout
+    static async logout(token) {
+        const decoded = await jwt.verify(token, "epsitec");
+        const user = await User.getById(decoded.id);
+        user.token = null;
+        await user.persist();
+    }
 }
 
 module.exports = Auth;

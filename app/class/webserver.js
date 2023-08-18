@@ -357,14 +357,6 @@ class Webserver {
         return { token, username, redirectUrl: `/users/${username}/calendars` };
     }
 
-    /****** WEB INTERFACE ********/
-
-    async getLogin(req, reply) {
-        return reply.status(200).view('index.ejs', {
-            title: 'Yach - Se connecter',
-        });
-    }
-
     async logout(req, reply) {
         const token = req.headers.authorization.split(' ')[1];
         if(!token) {
@@ -374,6 +366,20 @@ class Webserver {
         await Auth.logout(token);
         return reply.status(200).view('logout.ejs',
         { title:'disconnect', error: 'You are now disconnected', token: null });
+    }
+
+    /****** WEB INTERFACE ********/
+
+    async getLogin(req, reply) {
+        return reply.status(200).view('index.ejs', {
+            title: 'Yach - Se connecter',
+        });
+    }
+
+   async getLogout(req, reply) {
+        return reply.status(200).view('logout.ejs', {
+            title: 'Disconnect page',
+        })
     }
 
     async getDashboard(req, reply) {
