@@ -14,12 +14,11 @@ class ParseData {
         let comp = Ical.component(jcalData);
 
         for (let event of comp.getAllSubcomponents('vevent')) {
-            let start = event.getFirstProperty('dtstart').getFirstValue().toJSDate();
-            let end = event.getFirstProperty('dtend').getFirstValue().toJSDate();
 
-            // Convert to Europe/Zurich timezone
-            start.zone = ICAL.TimezoneService.get('Europe/Zurich');
-            end.zone = ICAL.TimezoneService.get('Europe/Zurich');
+            console.log(event.getFirstProperty('dtstart').getFirstValue())
+
+            let start = event.getFirstProperty('dtstart').getFirstValue().toJSDate().toISOString();
+            let end = event.getFirstProperty('dtend').getFirstValue().toJSDate().toISOString();
 
             let newEvent = new Event({
                 id: event.getFirstPropertyValue('uid'),

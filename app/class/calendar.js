@@ -6,21 +6,23 @@ const Database = require('./database');
 const { v4: uuidv4 } = require('uuid');
 const SourceHandler = require('./handler/sourceHandler');
 const TaskScheduler = require('./taskScheduler');
+const User = require('./user');
 
 /**
  * Represents a calendar.
  * @typedef {Object} CalendarType
  * @property {string} id
- * @property {string} [name]
+ * @property {string?} [name]
  * @property {string} type
- * @property {string} [url]
- * @property {string} [visible]
+ * @property {string?} [url]
+ * @property {string} [class]
+ * @property {string?} [color]
  * @property {string} [right]
  * @property {User[]} [users]
- * @property {string} [syncExpressionCron]
- * @property {string} [parentCalendarId]
- * @property {string} source
- * @property {string} format
+ * @property {string?} [syncExpressionCron]
+ * @property {string?} [parentCalendarId]
+ * @property {string?} [source]
+ * property {string} [format]
  * @property {Event[]} [events]
  * 
  */
@@ -32,13 +34,12 @@ class Calendar {
     constructor(config) {
         this.id = config.id || uuidv4();
         this.source = new SourceHandler({ source: config.source });
-        this.format = config.format;
         this.outputCalendar = Ical.component(['vcalendar', [], []]);
         this.events = config.events || [];
         this.name = config.name;
         this.type = config.type;
         this.url = config.url;
-        this.visible = config.visible;
+        this.class = config.class;
         this.right = config.right;
         this.users = config.users || [];
         this.syncExpressionCron = config.syncExpressionCron || '0 0 * * *';
@@ -137,7 +138,7 @@ class Calendar {
                 name: this.name,
                 type: this.type,
                 url: this.url,
-                right:this.right,
+                right: this.right,
                 syncExpressionCron: this.syncExpressionCron,
                 parentCalendarId: this.parentCalendarId,
             }
@@ -168,7 +169,7 @@ class Calendar {
 
     /**
      * Get events associated with the calendar.
-     * @returns {Event[]} - List of events.
+     * @returns {Promise<Event[]>} - List of events.
      */
     async getEvents() {
         try {
@@ -183,7 +184,7 @@ class Calendar {
             });
 
             //get only events.event
-            return events.map(event => event.event);
+            return events.map(event => new Event(event.event));
         } catch (error) {
             console.error(error);
             return [];
@@ -213,7 +214,7 @@ class Calendar {
     /**
      * Get a calendar instance by its ID.
      * @param {string} id - Unique identifier of the calendar.
-     * @returns {Promise<Calendar|null>} - Calendar instance or null if not found.
+     * @returns {Promise<Calendar>} - Calendar instance or null if not found.
      */
     static async getById(id) {
         try {
@@ -230,16 +231,15 @@ class Calendar {
             });
 
             if (!calendarData) {
-                return []
+                throw new Error(`Calendar with id ${id} not found.`);
             }
 
+            const { CalendarEventAssociations, ...otherCalendarData } = calendarData;
             // Convert associated events into Event instances
-            if (calendarData.CalendarEventAssociations) {
-                calendarData.events = calendarData.CalendarEventAssociations.map(association => new Event(association.event));
-                delete calendarData.CalendarEventAssociations;
-            }
+            const events = calendarData.CalendarEventAssociations.map(association => new Event(association.event));
 
-            const calendar = new Calendar(calendarData);
+            const calendar = new Calendar({ ...otherCalendarData, events });
+
 
             // Get child calendars and their events if any.
             const childCalendars = await calendar.getChildCalendars();
@@ -312,6 +312,7 @@ class Calendar {
             return calendars;
         } catch (error) {
             console.error(error);
+            return [];
         }
     }
 
@@ -343,7 +344,7 @@ class Calendar {
                         eventId: true
                     }
                 });
-        
+
                 for (let { eventId } of associatedEvents) {
                     await Database.db.event.delete({
                         where: {
@@ -352,7 +353,7 @@ class Calendar {
                     });
                 }
             }
-    
+
             await Database.db.calendar.delete({
                 where: {
                     id: this.id
@@ -362,7 +363,7 @@ class Calendar {
             console.debug(e);
         }
     }
-    
+
 
     // add to task scheduler to sync
     addToTaskScheduler() {

@@ -5,20 +5,20 @@ const Database = require('./database');
 /**
  * @typedef {Object} EventType
  * @property {string} id
- * @property {string} [summary]
- * @property {number|null} [sequence]
- * @property {string|null} [status]
+ * @property {string} summary
+ * @property {number?} [sequence]
+ * @property {string?} [status]
  * @property {string} [transp]
- * @property {string|null} [rRule]
- * @property {Date|string} start
- * @property {Date|string} end
+ * @property {string?} [rRule]
+ * @property {string} start
+ * @property {string} end
  * @property {string} [drStamp]
- * @property {string|null} [categories]
- * @property {string|null} [location]
- * @property {string|null} [geo]
- * @property {string|null} [description]
- * @property {string|null} [url]
- * @property {string|null} calendarId
+ * @property {string?} [categories]
+ * @property {string?} [location]
+ * @property {string?} [geo]
+ * @property {string?} [description]
+ * @property {string?} [url]
+ * @property {string} calendarId
  **/
 
 
@@ -63,7 +63,7 @@ class Event {
 
     const event = {
       ...eventWithAssociation,
-      calendarId: eventWithAssociation.CalendarEventAssociations[0]?.calendarId || null
+      calendarId: eventWithAssociation.CalendarEventAssociations[0]?.calendarId
     }
 
     return new Event(event);
@@ -101,15 +101,14 @@ class Event {
   /**
    * Retrieves the data of the current event instance.
    * @private
-   * @returns {Object} - The event data.
    */
   _eventData() {
     return {
       id: this.id,
-      summary: this.summary || null,
+      summary: this.summary,
       description: this.description,
-      start: this.start.toISOString(),
-      end: this.end.toISOString(),
+      start: this.start,
+      end: this.end,
       sequence: 1,
       status: "CONFIRMED",
       transp: this.transp || "OPAQUE",

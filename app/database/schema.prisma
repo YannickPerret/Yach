@@ -14,7 +14,7 @@ model Calendar {
   type            String                       @default("OTHER")
   url             String?
   color           String?                      @default("#000000")
-  visibility      String                      @default("PUBLIC")
+  class      String                      @default("PUBLIC")
   right           String                      @default("WRITE") 
   syncExpressionCron String?                    @default("0 0 * * *")
   createdAt       DateTime                     @default(now())
