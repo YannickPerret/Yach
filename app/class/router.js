@@ -20,10 +20,11 @@ module.exports = (app, handlers, upload) => {
       next();
   }, { prefix: '/api/v1' });
 
-  app.get('/', handlers.getHome); // A terme on a le login ici
-  app.get('/dashboard', handlers.getDashboard); // A terme on a le login ici
+  app.get('/', handlers.getLogin); //login
+  app.get('/dashboard', handlers.getDashboard); // Création d'un calendrier
   app.get('/calendar/:id', handlers.getWebCalendarById); // visualisation du calendrier if public
   app.get('/calendar', handlers.getWebCalendarById); // Visualisation du calendrier vide
+  app.get('/logout', handlers.logout);
 
 
   app.get('/users/:id/calendars', handlers.getUserCalendars); // voir les calendriers de l'utilisateur

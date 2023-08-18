@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yach - <%= title %></title>
+</head>
+<body>
+    
+    <div class="logout">
+        <h1>Logout</h1>
+        <p>You're now disconnected</p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+
+            if (<%- JSON.stringify(token) %> == null) {
+                // Set the token in the local storage
+                localStorage.removeItem('token');
+
+                setTimeout(() => {
+                    window.location.replace('/');
+                }, 5000);
+
+            }
+        });
+    </script>
+</body>
+</html>

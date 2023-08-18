@@ -53,7 +53,7 @@ class Webserver {
         this.port = config.port;
         this.fileConfig = config.fileConfig;
 
-        this.getHome = this.getHome.bind(this);
+        this.getLogin = this.getLogin.bind(this);
 
         this.initMiddleware();
         this.initRoutes();
@@ -359,10 +359,21 @@ class Webserver {
 
     /****** WEB INTERFACE ********/
 
-    async getHome(req, reply) {
+    async getLogin(req, reply) {
         return reply.status(200).view('index.ejs', {
             title: 'Yach - Se connecter',
         });
+    }
+
+    async logout(req, reply) {
+        const token = req.headers.authorization.split(' ')[1];
+        if(!token) {
+            return reply.status(400).send({ error: 'You are not connected' });
+        }
+
+        await Auth.logout(token);
+        return reply.status(200).view('logout.ejs',
+        { title:'disconnect', error: 'You are now disconnected', token: null });
     }
 
     async getDashboard(req, reply) {
@@ -394,6 +405,7 @@ class Webserver {
         let calendarId = req.params.calendarId;
 
         let user = await User.getByUsername(username);
+
         if (!user) {
             return reply.status(404).send({ error: 'User not found' });
         }
@@ -403,11 +415,11 @@ class Webserver {
             return reply.status(404).send({ error: 'Calendar not found' });
         }
 
-        let calendars = await user.getCalendarWithEvents();
+        user = await user.getCalendarWithEvents();
 
         return reply.status(200).view('calendar.ejs', {
             title: 'Calendar Page',
-            calendars: calendars[0],
+            calendars: calendar,
             user: user,
         });
     }
