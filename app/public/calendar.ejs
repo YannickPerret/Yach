@@ -304,6 +304,14 @@
 
         user = <%- JSON.stringify(user) %>;
         userCalendars = <%- JSON.stringify(calendars) %>;
+
+        if (!Array.isArray(userCalendars)) {
+            userCalendars = [userCalendars];
+        }
+
+        // ajouter une function pour le calendrier par défaut
+        currentCalendar = userCalendars[0];
+
         loadUserCalendarList();
 
         events = currentCalendar?.events.length > 0 ? currentCalendar.events : [];
@@ -324,8 +332,7 @@
             document.getElementById('userCalendars').appendChild(li);
             return;
         }
-
-        userCalendars.forEach(calendar => {
+        user.forEach(calendar => {
             const li = document.createElement('li');
             const a = document.createElement('a');
             a.href = `/users/${user.username}/calendar/${calendar.id}`;

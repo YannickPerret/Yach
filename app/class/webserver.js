@@ -198,7 +198,7 @@ class Webserver {
             return reply.status(400).send({ error: 'Invalid data format' });
         }
 
-        reply.send({ message: 'Calendar updated successfully' });
+        reply.send({ error: 'Calendar updated successfully' });
     }
 
     submitCalendar = async (req, reply) => {
@@ -207,7 +207,6 @@ class Webserver {
         const typeCalendar = ["PROFESSIONAL", "PERSONAL", "OTHER"].includes(typeCalendarInput) ? typeCalendarInput : "OTHER";
         const nameCalendar = nameCalendarInput || "Yoda Default";
         let outputCalendar;
-
 
         const user = await User.getByUsername(username);
         if (!user) {
@@ -248,7 +247,7 @@ class Webserver {
             format: 'ics',
             type: typeCalendar,
             name: nameCalendar,
-            visible: "PUBLIC",
+            class: "PUBLIC",
             right: "WRITE",
             users: [user]
         });
@@ -286,7 +285,7 @@ class Webserver {
             type: typeCalendar,
             name: nameCalendar,
             url: inputCalendarUrl,
-            visible: "PUBLIC",
+            class: "PUBLIC",
             right: "READ",
             users: [user]
         });
@@ -309,7 +308,7 @@ class Webserver {
         const ParentCalendar = new Calendar({
             name: nameCalendar,
             type: "SHARED",
-            visible: "PUBLIC",
+            class: "PUBLIC",
             users: [user]
         });
     
@@ -417,11 +416,13 @@ class Webserver {
         }
 
         let calendar = await Calendar.getById(calendarId);
+       
+
         if (!calendar) {
             return reply.status(404).send({ error: 'Calendar not found' });
         }
 
-        user = await user.getCalendarWithEvents();
+        user = await user.getCalendars();
 
         return reply.status(200).view('calendar.ejs', {
             title: 'Calendar Page',

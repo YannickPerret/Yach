@@ -79,6 +79,11 @@ class User {
         return new User(user);
     }
 
+    /**
+     * The function `getCalendars` retrieves the calendars associated with a user from the database and
+     * returns them as an array of `Calendar` objects.
+     * @returns <Promise>
+     */
     async getCalendars() {
         const userWithCalendars = await Database.db.user.findUnique({
             where: {
@@ -93,12 +98,13 @@ class User {
             }
         })
 
-        if (!userWithCalendars || !userWithCalendars.CalendarUsersAssociations) return [];
+        if (!userWithCalendars) return [];
 
-        const calendars = userWithCalendars.CalendarUsersAssociations.map(association => {
-            return new Calendar(association.calendar);
-        })
-
+    
+        let calendars = [];
+        for (const association of userWithCalendars.CalendarUsersAssociations) {    
+            calendars.push(association.calendar)
+        }
         return calendars;
     }
 

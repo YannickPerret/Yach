@@ -33,7 +33,8 @@
     <% calendars.forEach(function(calendar) { %>
         <% if (calendar.type == 'PERSONAL') { %>
           <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
-          <label for="<%= calendar.id %>"><a href="/api/v1/</calendar/<%= calendar.id %>"><%= calendar.name %></a></label><br>
+          <label for="<%= calendar.id %>"><a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a>
+          </label><br>
         <% } %>
     <% }); %>
 
@@ -41,7 +42,8 @@
     <% calendars.forEach(function(calendar) { %>
         <% if (calendar.type == 'PROFESSIONAL') { %>
           <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
-          <label for="<%= calendar.id %>"><a href="/api/v1/calendar/<%= calendar.id %>"><%= calendar.name %></a></label><br>
+          <label for="<%= calendar.id %>"><a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a>
+          </label><br>
         <% } %>
     <% }); %>
 
@@ -50,7 +52,8 @@
     <% calendars.forEach(function(calendar) { %>
         <% if (calendar.type == 'OTHER') { %>
           <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
-          <label for="<%= calendar.id %>"><a href="/api/v1/calendar/<%= calendar.id %>"><%= calendar.name %></a></label><br>
+          <label for="<%= calendar.id %>"><a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a>
+          </label><br>
         <% } %>
     <% }); %>
     <% } %>
@@ -59,7 +62,8 @@
   <% calendars.forEach(function(calendar) { %>
     <% if (calendar.type == 'SHARED') { %>
       <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
-      <label for="<%= calendar.id %>"><a href="/api/v1/calendar/<%= calendar.id %>"><%= calendar.name %></a></label><br>
+      <label for="<%= calendar.id %>"><a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a>
+      </label><br>
     <% } %>
   <% }); %>
   <br />
@@ -73,7 +77,16 @@
     if (!localStorage.getItem('token') || !localStorage.getItem('username'))  {
       window.location.href = '/';
     }
-    document.querySelector('#username').value = localStorage.getItem('username');
+
+    username = localStorage.getItem('username');
+
+    // Mettre à jour les éléments avec la classe 'dynamic-link'
+    const dynamicLinks = document.querySelectorAll('.dynamic-link');
+    dynamicLinks.forEach(link => {
+        link.href = link.href.replace('username', username);
+    });
+
+    document.querySelector('#username').value = username
 
     const form = document.querySelector('form');
     const errorDiv = document.querySelector('#error');
