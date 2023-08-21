@@ -6,7 +6,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
-    <link rel="manifest" href="/manifest.json">
 
     <style>
         .container {
@@ -326,7 +325,6 @@
     const loadUserCalendarList = () => {
 
         if (userAllCalendars.length <= 0) {
-            // create li to show No Calendar Found
             const li = document.createElement('li');
             li.textContent = 'No Calendar Found';
             document.getElementById('userAllCalendars').appendChild(li);
@@ -336,15 +334,23 @@
         userAllCalendars.forEach(calendar => {
             const li = document.createElement('li');
             const a = document.createElement('a');
+            const p = document.createElement('p');
             a.href = `/users/${user.username}/calendar/${calendar.id}`;
             li.textContent = calendar.name;
+
+            if (calendar.subCalendar && calendar.subCalendar.length) {
+                li.textContent += " child : ";
+                calendar.subCalendar.forEach(subCalendar => {
+                    li.textContent += subCalendar.name + " ";
+                })
+            }
+            
             li.addEventListener('click', (element) => {
                 document.querySelectorAll('.selected').forEach(element => element.classList.remove('selected'))
                 li.classList.add('selected');
                 currentCalendar = calendar;
 
                 let events = getAllEventsFromCalendars([currentCalendar])
-
 
                 fullCalendar = initializeCalendar(events, userAllCalendars.id);
             });
