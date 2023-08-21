@@ -72,7 +72,7 @@
             display: none;
         }
 
-        .sidebar-userCalendars {
+        .sidebar-userAllCalendars {
             display: flex;
             flex-direction: column;
             gap: 15px;
@@ -93,8 +93,8 @@
         }
 
         .calendar-message {
-            display : none;
-            padding : 15px;
+            display: none;
+            padding: 15px;
             width: 80%;
             height: 25px;
             border-radius: 5px;
@@ -221,7 +221,7 @@
                 <a href="/"><button id="createCalendarBtn">Create new calendar</button></a>
                 <div id="miniCalendar"></div>
                 <h3>My Calendars</h3>
-                <ul id="userCalendars" class="sidebar-userCalendars">
+                <ul id="userAllCalendars" class="sidebar-userAllCalendars">
                 </ul>
 
                 <button id="settingsBtn">Settings</button>
@@ -303,20 +303,20 @@
         }
 
         user = <%- JSON.stringify(user) %>;
-        userCalendars = <%- JSON.stringify(calendars) %>;
+        userAllCalendars = <%- JSON.stringify(calendars) %>;
 
-        if (!Array.isArray(userCalendars)) {
-            userCalendars = [userCalendars];
+        if (!Array.isArray(userAllCalendars)) {
+            userAllCalendars = [userAllCalendars];
         }
 
         // ajouter une function pour le calendrier par défaut
-        currentCalendar = userCalendars[0];
+        currentCalendar = userAllCalendars[0];
 
         loadUserCalendarList();
 
-        events = currentCalendar?.events.length > 0 ? currentCalendar.events : [];
+        events = getAllEventsFromCalendars([currentCalendar]);
 
-        fullCalendar = initializeCalendar(events, userCalendars.id);
+        fullCalendar = initializeCalendar(events, userAllCalendars.id);
         divError = document.getElementById('message');
         document.getElementById('createCalendarBtn').addEventListener('click', () => { });
         document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
@@ -325,14 +325,15 @@
 
     const loadUserCalendarList = () => {
 
-        if (userCalendars.length <= 0) {
+        if (userAllCalendars.length <= 0) {
             // create li to show No Calendar Found
             const li = document.createElement('li');
             li.textContent = 'No Calendar Found';
-            document.getElementById('userCalendars').appendChild(li);
+            document.getElementById('userAllCalendars').appendChild(li);
             return;
         }
-        user.forEach(calendar => {
+
+        userAllCalendars.forEach(calendar => {
             const li = document.createElement('li');
             const a = document.createElement('a');
             a.href = `/users/${user.username}/calendar/${calendar.id}`;
@@ -341,11 +342,27 @@
                 document.querySelectorAll('.selected').forEach(element => element.classList.remove('selected'))
                 li.classList.add('selected');
                 currentCalendar = calendar;
-                fullCalendar = initializeCalendar(currentCalendar.events, userCalendars.id);
+
+                let events = getAllEventsFromCalendars([currentCalendar])
+
+
+                fullCalendar = initializeCalendar(events, userAllCalendars.id);
             });
             li.appendChild(a);
-            document.getElementById('userCalendars').appendChild(li);
+            document.getElementById('userAllCalendars').appendChild(li);
         });
+    }
+
+
+    const getAllEventsFromCalendars = (calendars) => {
+        let allEvents = [];
+        for (let calendar of calendars) {
+            allEvents = allEvents.concat(calendar.events);
+            if (calendar.subCalendar && calendar.subCalendar.length) {
+                allEvents = allEvents.concat(getAllEventsFromCalendars(calendar.subCalendar));
+            }
+        }
+        return allEvents;
     }
 
     document.getElementById('eventForm').addEventListener('submit', async (data) => {
@@ -414,7 +431,6 @@
     };
 
     const toggleSidebar = () => {
-        console.log('toggleSidebar');
         const sidebar = document.querySelector('.sidebar');
         const calendarContainer = document.querySelector('.calendar-container');
 
@@ -504,7 +520,7 @@
     const openModalSettings = async () => {
         const modal = document.getElementById('settingsModal');
         document.getElementById('removeCalendar').addEventListener("click", () => {
-            fetch(`/api/v1/calendar/${userCalendars.id}`, {
+            fetch(`/api/v1/calendar/${userAllCalendars.id}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'

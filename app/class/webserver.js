@@ -177,16 +177,16 @@ class Webserver {
             const existingEvent = await Event.getById(eventData.id);
             if (existingEvent) {
                 existingEvent.summary = eventData.summary;
-                existingEvent.start = new Date(eventData.start);
-                existingEvent.end = new Date(eventData.end);
+                existingEvent.start = eventData.start;
+                existingEvent.end = eventData.end;
                 existingEvent.description = eventData.description || null;
                 await existingEvent.persist();
             } else {
                 // Handle scenario where event doesn't exist yet (if needed)
                 let newEvent = new Event({
                     id: eventData.id,
-                    start: new Date(eventData.start),
-                    end: new Date(eventData.end),
+                    start: eventData.start,
+                    end: eventData.end,
                     summary: eventData.summary,
                     description: eventData.description || null,
                     calendarId: calendarId

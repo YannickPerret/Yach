@@ -1,5 +1,5 @@
 const Database = require('./database');
-const Calendar = require('./calendar');
+
 
 class User {
 
@@ -108,40 +108,33 @@ class User {
         return calendars;
     }
 
+    async fetchCalendarWithEvents(calendar) {
+        // Récupère les événements associés à ce calendrier
+        const events = await Database.db.calendarEventAssociation.findMany({
+            where: { calendarId: calendar.id },
+            include: { event: true }
+        });
+        calendar.events = events.map(assoc => assoc.event);
+
+        // Récupère récursivement les sous-calendriers
+        const subCalendars = await Database.db.calendar.findMany({ where: { parentCalendarId: calendar.id } });
+        for (let subCalendar of subCalendars) {
+            subCalendar = await this.fetchCalendarWithEvents(subCalendar);
+        }
+        calendar.subCalendar = subCalendars;
+
+        return calendar;
+    }
 
     async getCalendarWithEvents() {
-        const dbCalendarsUser = await Database.db.user.findUnique({
-            where: {
-                id: this.id
-            },
-            include: {
-                CalendarUsersAssociations: {
-                    include: {
-                        calendar: {
-                            include: {
-                                CalendarEventAssociations: {
-                                    include: {
-                                        event: true
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    
-        if (!dbCalendarsUser) return [];
-    
-        let calendarsWithEvents = dbCalendarsUser.CalendarUsersAssociations.map(association => {
-            let calendar = association.calendar;
-            calendar.events = calendar.CalendarEventAssociations.map(eventAssoc => eventAssoc.event);
-            delete calendar.CalendarEventAssociations;
-            return calendar;
-        });
-    
-        return calendarsWithEvents;
-    }    
+        let calendars = await this.getCalendars();
+
+        // Pour chaque calendrier, récupère ses événements et sous-calendriers
+        for (let calendar of calendars) {
+            calendar = await this.fetchCalendarWithEvents(calendar);
+        }
+        return calendars;
+    }
 }
 
 module.exports = User;
