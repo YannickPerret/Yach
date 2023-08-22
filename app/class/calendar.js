@@ -214,15 +214,12 @@ class Calendar {
                     await childCalendar.addEvent(event);
                 }
             }
-
             console.log(`Event added to calendar with id: ${this.id}`);
         } catch (error) {
             console.error(`Error adding event to calendar with id: ${this.id}`, error);
             throw error;
         }
     }
-
-
 
     /**
      * Get events associated with the calendar.
