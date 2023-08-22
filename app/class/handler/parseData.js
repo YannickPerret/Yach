@@ -14,9 +14,6 @@ class ParseData {
         let comp = Ical.component(jcalData);
 
         for (let event of comp.getAllSubcomponents('vevent')) {
-
-            console.log(event.getFirstProperty('dtstart').getFirstValue())
-
             let start = event.getFirstProperty('dtstart').getFirstValue().toJSDate().toISOString();
             let end = event.getFirstProperty('dtend').getFirstValue().toJSDate().toISOString();
 

@@ -22,7 +22,7 @@ class FileRequest extends ParseData {
     async parseData() {
         let events = [];
         let data = await this.load();
-        
+                
         switch (this.getExtension()) {
             case 'ics':
                 events = await this.parseDataICS(data);

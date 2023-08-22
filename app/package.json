@@ -8,6 +8,9 @@
     "dev": "nodemon index.js",
     "studio": "sudo npx prisma studio --schema database/schema.prisma"
   },
+  "prisma": {
+    "seed": "node database/seed.js"
+  },
   "author": "",
   "license": "ISC",
   "dependencies": {
