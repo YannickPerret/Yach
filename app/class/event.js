@@ -1,10 +1,11 @@
 // @ts-check
 
 const Database = require('./database');
+const { v4: uuidv4 } = require('uuid');
 
 /**
  * @typedef {Object} EventType
- * @property {string} id
+ * @property {string?} [id]
  * @property {string} summary
  * @property {number?} [sequence]
  * @property {string?} [status]
@@ -27,7 +28,7 @@ class Event {
     * @param {EventType} config
   */
   constructor(config) {
-    this.id = config.id;
+    this.id = config.id || uuidv4(); 
     this.summary = config.summary;
     this.sequence = config.sequence;
     this.status = config.status;
@@ -47,24 +48,18 @@ class Event {
    /**
    * Retrieves an event by its ID.
    * @param {string} id - The ID of the event to retrieve.
-   * @returns {Promise<Event|null>} - The event if found, otherwise null.
+   * @returns {Promise<Event|[]]>} - The event if found, otherwise null.
    */
   static async getById(id) {
-    const eventWithAssociation = await Database.db.event.findUnique({
+    if (!id) return [];
+
+    const event = await Database.db.event.findUnique({
       where: {
         id: id
-      },
-      include: {
-        CalendarEventAssociations: true
-      },
+      }
     });
 
-    if (!eventWithAssociation) return null;
-
-    const event = {
-      ...eventWithAssociation,
-      calendarId: eventWithAssociation.CalendarEventAssociations[0]?.calendarId
-    }
+    if (!event) return [];
 
     return new Event(event);
 }
@@ -83,7 +78,7 @@ class Event {
     });
 
 
-    await this._associateWithCalendar(storedEvent.id);
+    //await this._associateWithCalendar(storedEvent.id);
   }
 
    /**
