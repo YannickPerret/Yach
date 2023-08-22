@@ -79,20 +79,20 @@ class Calendar {
                 this.outputCalendar.addSubcomponent(vevent);
             });
         };
-    
+
         // Ajouter les événements du calendrier actuel
         addEventsToIcal(this.events);
-    
+
         // Si le calendrier a des enfants, ajouter leurs événements
         if (this.children && this.children.length > 0) {
             this.children.forEach((childCalendar) => {
                 addEventsToIcal(childCalendar.events);
             });
         }
-    
+
         return this.outputCalendar.toString();
     };
-    
+
 
     async getUsers() {
         const users = await Database.db.user.findMany({
@@ -135,9 +135,9 @@ class Calendar {
         if (!childCalendars) {
             return [];
         }
-        return childCalendars;
+        return childCalendars.map(childCalendar => new Calendar(childCalendar.childCalendar));
     }
-    
+
 
     /**
      * Persist the calendar data to the database.
@@ -173,20 +173,31 @@ class Calendar {
     }
 
     /**
-     * Add an event to the calendar.
-     * @param {Event} event - Event instance to be added.
-     * @returns {Promise<void>}
-     */
+  * Add an event to the calendar.
+  * @param {Event} event - Event instance to be added.
+  * @returns {Promise<void>}
+  */
     async addEvent(event) {
-        if (this.type === "SHARED") {
-            const childCalendars = await this.getChildCalendars();
-            for (const childCalendar of childCalendars) {
-                await childCalendar.#associateEventWithCalendar(event.id);
+        try {
+            if (this.type !== "SHARED") {
+                await this.#associateEventWithCalendar(event.id);
             }
-        } else {
-            await this.#associateEventWithCalendar(event.id);
+
+            const childCalendars = await this.getChildCalendars();
+            if (childCalendars && childCalendars.length > 0) {
+                for (const childCalendar of childCalendars) {
+                    await childCalendar.addEvent(event);
+                }
+            }
+
+            console.log(`Event added to calendar with id: ${this.id}`);
+        } catch (error) {
+            console.error(`Error adding event to calendar with id: ${this.id}`, error);
+            throw error;
         }
     }
+
+
 
     /**
      * Get events associated with the calendar.
@@ -204,7 +215,6 @@ class Calendar {
                 distinct: ['eventId'],
             });
 
-            //get only events.event
             return events.map(event => new Event(event.event));
         } catch (error) {
             console.error(error);
@@ -250,19 +260,19 @@ class Calendar {
                     childCalendars: true,
                 },
             });
-    
+
             if (!calendarData) {
                 throw new Error(`Calendar with id ${id} not found.`);
             }
-    
+
             const { calendarEventAssociations, childCalendars, ...otherCalendarData } = calendarData;
             const events = calendarEventAssociations.map(association => new Event(association.event));
-    
+
             const calendar = new Calendar({ ...otherCalendarData, events });
-    
+
             // Recursive call to get child calendars and their events
             await this.getChildCalendarsWithEvents(calendar, childCalendars);
-    
+
             calendar.events = calendar.events.filter((event, index, self) => self.findIndex(e => e.id === event.id) === index);
             return calendar
         } catch (error) {
@@ -270,7 +280,7 @@ class Calendar {
             throw error;
         }
     }
-    
+
     static async getChildCalendarsWithEvents(parentCalendar, childAssociations) {
         for (const association of childAssociations) {
             const childCalendarData = await Database.db.calendar.findUnique({
@@ -284,19 +294,19 @@ class Calendar {
                     childCalendars: true,
                 },
             });
-    
+
             const { calendarEventAssociations, childCalendars, ...otherChildCalendarData } = childCalendarData;
             const childEvents = calendarEventAssociations.map(association => new Event(association.event));
-    
+
             const childCalendar = new Calendar({ ...otherChildCalendarData, events: childEvents });
-    
+
             // Assuming parentCalendar has a children array to store child calendars
             parentCalendar.children.push(childCalendar);
-    
+
             // Recursive call to fetch child calendars of this child calendar
             await this.getChildCalendarsWithEvents(childCalendar, childCalendars);
         }
-    }    
+    }
 
     /**
      * Gets calendars by a specified field and value.
@@ -344,13 +354,13 @@ class Calendar {
                 parentCalendar: true
             }
         });
-    
+
         if (!parentCalendars) {
             return [];
         }
         return parentCalendars.map(association => association.parentCalendar);
     }
-    
+
 
     /**
      * Get all calendars optionally filtered by a given criteria.
