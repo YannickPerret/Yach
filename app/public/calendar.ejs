@@ -334,10 +334,11 @@
         userAllCalendars.forEach(calendar => {
             const li = document.createElement('li');
             const a = document.createElement('a');
-            const p = document.createElement('p');
             a.href = `/users/${user.username}/calendar/${calendar.id}`;
             li.textContent = calendar.name;
-
+            const btn = document.createElement('button');
+            btn.textContent = " Delete";
+            
             if (calendar.children && calendar.children.length) {
                 li.textContent += " child : ";
                 calendar.children.forEach(children => {
@@ -345,6 +346,11 @@
                 })
             }
             
+            btn.addEventListener('click', () => {
+                removeCalendar(calendar)
+            })
+            li.appendChild(btn);
+
             li.addEventListener('click', (element) => {
                 document.querySelectorAll('.selected').forEach(element => element.classList.remove('selected'))
                 li.classList.add('selected');
@@ -408,20 +414,14 @@
         openModalSettings();
     });
 
-    const generateRandomString = (length = 10) => {
-        const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        let result = '';
-        for (let i = 0; i < length; i++) {
-            result += characters.charAt(Math.floor(Math.random() * characters.length));
-        }
-        return result;
-    }
-
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
             closeModal();
         }
     });
+
+    
+
     const changeView = (viewName) => {
         fullCalendar.changeView(viewName);
         localStorage.setItem('lastCalendarView', viewName);
@@ -523,18 +523,21 @@
     };
 
     //model for setting
-    const openModalSettings = async () => {
+    const openModalSettings = async (calendar) => {
         const modal = document.getElementById('settingsModal');
         document.getElementById('removeCalendar').addEventListener("click", () => {
-            fetch(`/api/v1/calendar/${userAllCalendars.id}`, {
+            removeCalendar(calendar)
+        })
+
+        modal.style.display = 'flex';
+    };
+    const removeCalendar = async (calendar) => {
+       await fetch(`/api/v1/calendar/${calendar.id}`, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'
                 }
             })
-        })
-
-        modal.style.display = 'flex';
     };
 
     const closeModalSettings = () => {

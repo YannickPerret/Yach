@@ -22,7 +22,6 @@ const User = require('./user');
  * @property {string?} [syncExpressionCron]
  * @property {string?} [parentCalendarId]
  * @property {string?} [source]
- * property {string} [format]
  * @property {Event[]} [events]
  * @property {Calendar[]} [children]
  * 
@@ -105,10 +104,8 @@ class Calendar {
             });
         };
 
-        // Ajouter les événements du calendrier actuel
         addEventsToIcal(this.events);
 
-        // Si le calendrier a des enfants, ajouter leurs événements
         if (this.children && this.children.length > 0) {
             this.children.forEach((childCalendar) => {
                 addEventsToIcal(childCalendar.events);
@@ -117,21 +114,6 @@ class Calendar {
 
         return this.outputCalendar.toString();
     };
-
-
-    async getUsers() {
-        const users = await Database.db.user.findMany({
-            where: {
-                calendars: {
-                    some: {
-                        id: this.id
-                    }
-                }
-            }
-        });
-
-        return users;
-    }
 
     /**
      * Add a child calendar.
@@ -434,30 +416,36 @@ class Calendar {
 
     async remove() {
         try {
-            if (this.type !== "SHARED") {
-                const associatedEvents = await Database.db.calendarEventAssociation.findMany({
-                    where: {
-                        calendarId: this.id
-                    },
-                    select: {
-                        eventId: true
-                    }
-                });
 
-                for (let { eventId } of associatedEvents) {
-                    await Database.db.event.delete({
-                        where: {
-                            id: eventId
-                        }
-                    });
-                }
-            }
+        await Database.db.calendarEventAssociation.deleteMany({
+            where: { calendarId: this.id }
+        });
 
-            await Database.db.calendar.delete({
-                where: {
-                    id: this.id
-                }
-            });
+        const eventIds = await Database.db.calendarEventAssociation.findMany({
+            where: { calendarId: this.id },
+            select: { eventId: true }
+        }).then(events => events.map(e => e.eventId));
+
+        await Database.db.event.deleteMany({
+            where: { id: { in: eventIds } }
+        });
+
+        await Database.db.CalendarAssociation.deleteMany({
+            where: { OR: [{ parentCalendarId: this.id }, { childCalendarId: this.id }] }
+        });
+
+        await Database.db.CalendarUserAssociation.deleteMany({
+            where: { calendarId: this.id }
+        });
+
+        await Database.db.calendar.delete({
+            where: { id: this.id }
+        });
+        
+        console.log("Calendar removed with id:", this.id)
+
+        delete this;
+            
         } catch (e) {
             console.debug(e);
         }
