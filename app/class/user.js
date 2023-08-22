@@ -1,6 +1,5 @@
 const Database = require('./database');
 
-
 class User {
 
     constructor(config) {
@@ -79,6 +78,15 @@ class User {
         return new User(user);
     }
 
+    async getCalendarWithEvents() {
+        let calendars = await this.getCalendars();
+
+        for (let calendar of calendars) {
+            calendar = await this.fetchCalendarWithEvents(calendar);
+        }
+        return calendars;
+    }
+
     /**
      * The function `getCalendars` retrieves the calendars associated with a user from the database and
      * returns them as an array of `Calendar` objects.
@@ -109,31 +117,24 @@ class User {
     }
 
     async fetchCalendarWithEvents(calendar) {
-        // Récupère les événements associés à ce calendrier
         const events = await Database.db.calendarEventAssociation.findMany({
             where: { calendarId: calendar.id },
             include: { event: true }
         });
         calendar.events = events.map(assoc => assoc.event);
 
-        // Récupère récursivement les sous-calendriers
-        const subCalendars = await Database.db.calendar.findMany({ where: { parentCalendarId: calendar.id } });
-        for (let subCalendar of subCalendars) {
-            subCalendar = await this.fetchCalendarWithEvents(subCalendar);
+        const subCalendars = await Database.db.calendarAssociation.findMany({
+            where: { parentCalendarId: calendar.id },
+            include: { childCalendar: true }
+        });
+    
+        calendar.children = [];
+        for (let subCalendarAssoc of subCalendars) {
+            const subCalendar = await this.fetchCalendarWithEvents(subCalendarAssoc.childCalendar);
+            calendar.children.push(subCalendar);
         }
-        calendar.subCalendar = subCalendars;
-
+    
         return calendar;
-    }
-
-    async getCalendarWithEvents() {
-        let calendars = await this.getCalendars();
-
-        // Pour chaque calendrier, récupère ses événements et sous-calendriers
-        for (let calendar of calendars) {
-            calendar = await this.fetchCalendarWithEvents(calendar);
-        }
-        return calendars;
     }
 }
 

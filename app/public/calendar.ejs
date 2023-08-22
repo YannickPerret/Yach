@@ -338,10 +338,10 @@
             a.href = `/users/${user.username}/calendar/${calendar.id}`;
             li.textContent = calendar.name;
 
-            if (calendar.subCalendar && calendar.subCalendar.length) {
+            if (calendar.children && calendar.children.length) {
                 li.textContent += " child : ";
-                calendar.subCalendar.forEach(subCalendar => {
-                    li.textContent += subCalendar.name + " ";
+                calendar.children.forEach(children => {
+                    li.textContent += children.name + " ";
                 })
             }
             
@@ -364,8 +364,8 @@
         let allEvents = [];
         for (let calendar of calendars) {
             allEvents = allEvents.concat(calendar.events);
-            if (calendar.subCalendar && calendar.subCalendar.length) {
-                allEvents = allEvents.concat(getAllEventsFromCalendars(calendar.subCalendar));
+            if (calendar.children && calendar.children.length) {
+                allEvents = allEvents.concat(getAllEventsFromCalendars(calendar.children));
             }
         }
         return allEvents;

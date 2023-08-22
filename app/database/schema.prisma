@@ -14,18 +14,26 @@ model Calendar {
   type            String                       @default("OTHER")
   url             String?
   color           String?                      @default("#000000")
-  class      String                      @default("PUBLIC")
+  class           String                      @default("PUBLIC")
   right           String                      @default("WRITE") 
   syncExpressionCron String?                    @default("0 0 * * *")
   createdAt       DateTime                     @default(now())
   updatedAt       DateTime                     @updatedAt
-  CalendarEventAssociations CalendarEventAssociation[]
-  parentCalendarId String?                     @map("parent_calendar_id")
-  parentCalendar   Calendar?   @relation("CalendarToCalendar", fields: [parentCalendarId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  subCalendars     Calendar[] @relation("CalendarToCalendar")
+  calendarEventAssociations CalendarEventAssociation[]
   calendarUsersAssociations    CalendarUserAssociation[]
+  childCalendars             CalendarAssociation[]     @relation("ParentToChild")
+  parentCalendars            CalendarAssociation[]     @relation("ChildToParent")
 
   @@index([id])
+}
+
+model CalendarAssociation {
+  parentCalendarId           String
+  childCalendarId            String
+  parentCalendar             Calendar                   @relation(name: "ParentToChild", fields: [parentCalendarId], references: [id])
+  childCalendar              Calendar                   @relation(name: "ChildToParent", fields: [childCalendarId], references: [id])
+
+  @@id([parentCalendarId, childCalendarId])
 }
 
 model Event {
@@ -45,7 +53,7 @@ model Event {
   geo         String?
   description String?
   url         String?
-  CalendarEventAssociations CalendarEventAssociation[] 
+  calendarEventAssociations CalendarEventAssociation[] 
 
   @@index([id])
 }
@@ -66,7 +74,7 @@ model User {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
   deletedAt   DateTime?                    
-  CalendarUsersAssociations CalendarUserAssociation[]
+  calendarUsersAssociations CalendarUserAssociation[]
 
   @@index([id])
 }

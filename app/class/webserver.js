@@ -109,7 +109,8 @@ class Webserver {
 
         let calendar = await Calendar.getById(id);
 
-        let comp = calendar.generate()
+        let comp = calendar.generateIcal()
+
 
         // set the correct headers
         res.type('Content-Type', 'text/calendar');
@@ -149,6 +150,7 @@ class Webserver {
             // Handle ICS data
             let jcalData = Ical.parse(eventData);
             let comp = Ical.component(jcalData);
+            console.log("2Event data:");
 
             for (let event of comp.getAllSubcomponents('vevent')) {
                 let uid = event.getFirstPropertyValue('uid');
@@ -156,14 +158,14 @@ class Webserver {
 
                 if (existingEvent) {
                     existingEvent.summary = event.getFirstPropertyValue('summary');
-                    existingEvent.start = event.getFirstPropertyValue('dtstart').toJSDate();
-                    existingEvent.end = event.getFirstPropertyValue('dtend').toJSDate();
+                    existingEvent.start = event.getFirstPropertyValue('dtstart')//.toJSDate();
+                    existingEvent.end = event.getFirstPropertyValue('dtend')//.toJSDate();
                     await existingEvent.persist();
                 } else {
                     let newEvent = new Event({
                         id: event.getFirstPropertyValue('uid'),
-                        start: event.getFirstPropertyValue('dtstart').toJSDate(),
-                        end: event.getFirstPropertyValue('dtend').toJSDate(),
+                        start: event.getFirstPropertyValue('dtstart'),//.toJSDate(),
+                        end: event.getFirstPropertyValue('dtend'),//.toJSDate(),
                         summary: event.getFirstPropertyValue('summary'),
                         transp: event.getFirstPropertyValue('transp'),
                         calendarId: calendarId
@@ -172,28 +174,29 @@ class Webserver {
                     await calendar.addEvent(newEvent);
                 }
             }
-        } else if (eventData.id && eventData.start && eventData.end && eventData.summary) {
-            // Handle JSON data
+        } else if (typeof eventData === 'object') {
+
             const existingEvent = await Event.getById(eventData.id);
             if (existingEvent) {
                 existingEvent.summary = eventData.summary;
-                existingEvent.start = eventData.start;
-                existingEvent.end = eventData.end;
+                existingEvent.start = new Date(eventData.start).toISOString();
+                existingEvent.end = new Date(eventData.end).toISOString();
                 existingEvent.description = eventData.description || null;
                 await existingEvent.persist();
             } else {
-                // Handle scenario where event doesn't exist yet (if needed)
                 let newEvent = new Event({
-                    id: eventData.id,
-                    start: eventData.start,
-                    end: eventData.end,
+                    start: new Date(eventData.start).toISOString(),
+                    end: new Date(eventData.end).toISOString(),
                     summary: eventData.summary,
                     description: eventData.description || null,
                     calendarId: calendarId
                 });
+
                 await newEvent.persist();
                 await calendar.addEvent(newEvent);
+
             }
+
         } else {
             return reply.status(400).send({ error: 'Invalid data format' });
         }
@@ -219,6 +222,7 @@ class Webserver {
 
         const selectedCalendars = inputCalendarsSelected && Array.isArray(inputCalendarsSelected) ? inputCalendarsSelected : [];
 
+
         if (data) {
             outputCalendar = await this.handleFileUpload(data, typeCalendar, nameCalendar, user);
             selectedCalendars.push(outputCalendar.id);
@@ -232,7 +236,7 @@ class Webserver {
         if (selectedCalendars.length > 1) {
             outputCalendar = await this.handleMultipleCalendars(selectedCalendars, nameCalendar, user);
         } else if (!data && !inputCalendarUrl) {
-            return reply.status(400).send({ error: 'No calendars selected or uploaded' });
+            return reply.status(400).send({ error: 'More than one calendar must be selected' });
         }
 
         reply.send({ url: `${process.env.ENDPOINT_URL}:${process.env.ENDPOINT_PORT}/api/v1/calendar/${outputCalendar.id}` });
@@ -320,7 +324,7 @@ class Webserver {
                 ParentCalendar.right = "READ";
                 updateParentCalendar = true;
             }
-            calendar.parentCalendarId = ParentCalendar.id;
+            await calendar.addParentCalendar(ParentCalendar);
             await calendar.persist();
         }
 
