@@ -64,6 +64,31 @@ class Calendar {
         }
     }
 
+    filterDuplicateEvents = (calendar) => {
+        const collectAllEvents = (calendar) => {
+            let allEvents = [...calendar.events];
+            if (calendar.children) {
+                for (const child of calendar.children) {
+                    allEvents = allEvents.concat(collectAllEvents(child));
+                }
+            }
+            return allEvents;
+        };
+    
+        const allEvents = collectAllEvents(calendar);
+
+        const uniqueEvents = allEvents.filter((event, index, self) => self.findIndex(e => e.id === event.id) === index);
+    
+        calendar.events = uniqueEvents;
+    
+        if (calendar.children) {
+            for (const child of calendar.children) {
+                child.events = [];
+            }
+        }
+    };
+
+
     /**
      * Generates an iCal string from the events.
      * @returns {string} - The iCal formatted string.
@@ -260,7 +285,7 @@ class Calendar {
                     childCalendars: true,
                 },
             });
-
+            
             if (!calendarData) {
                 throw new Error(`Calendar with id ${id} not found.`);
             }
@@ -273,7 +298,10 @@ class Calendar {
             // Recursive call to get child calendars and their events
             await this.getChildCalendarsWithEvents(calendar, childCalendars);
 
-            calendar.events = calendar.events.filter((event, index, self) => self.findIndex(e => e.id === event.id) === index);
+            calendar.filterDuplicateEvents(calendar);
+
+            //calendar.events = calendar.events.filter((event, index, self) => self.findIndex(e => e.id === event.id) === index);
+
             return calendar
         } catch (error) {
             console.error("Error fetching calendar by ID:", error);
