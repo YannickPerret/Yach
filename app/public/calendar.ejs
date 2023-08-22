@@ -490,7 +490,7 @@
 
         const eventToUpdate = {
             calendarId: event.calendarId || currentCalendar.id,
-            id: idInput || generateRandomString(),
+            id: idInput || null,
             summary: summaryInput,
             start: startDateInput,
             end: endDateInput,
@@ -555,7 +555,7 @@
         const eventForm = document.getElementById('eventForm');
 
         calendarIdInput.value = currentCalendar.id;
-        eventIdInput.value = eventOrDate.id || generateRandomString();
+        eventIdInput.value = eventOrDate.id || null;
         summaryInput.value = eventOrDate.title || '';
         startDateInput.value = formatDateToDatetimeLocal(eventOrDate.start || new Date(eventOrDate));
         endDateInput.value = formatDateToDatetimeLocal(eventOrDate.end || new Date(eventOrDate));

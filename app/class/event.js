@@ -48,10 +48,10 @@ class Event {
    /**
    * Retrieves an event by its ID.
    * @param {string} id - The ID of the event to retrieve.
-   * @returns {Promise<Event|[]]>} - The event if found, otherwise null.
+   * @returns {Promise<Event|null>} - The event if found, otherwise null.
    */
   static async getById(id) {
-    if (!id) return [];
+    if (!id) return null;
 
     const event = await Database.db.event.findUnique({
       where: {
@@ -59,7 +59,7 @@ class Event {
       }
     });
 
-    if (!event) return [];
+    if (!event) return null;
 
     return new Event(event);
 }
