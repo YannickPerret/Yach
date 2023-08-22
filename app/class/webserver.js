@@ -111,7 +111,6 @@ class Webserver {
 
         let comp = calendar.generateIcal()
 
-
         // set the correct headers
         res.type('Content-Type', 'text/calendar');
         res.status(200).send(comp.toString());
@@ -177,6 +176,7 @@ class Webserver {
         } else if (typeof eventData === 'object') {
 
             const existingEvent = await Event.getById(eventData.id);
+
             if (existingEvent) {
                 existingEvent.summary = eventData.summary;
                 existingEvent.start = new Date(eventData.start).toISOString();
@@ -262,6 +262,7 @@ class Webserver {
         for (const event of uploadCalendar.events) {
             event.calendarId = uploadCalendar.id;
             await event.persist();
+            await uploadCalendar.addEvent(event);
         }
 
         /*Je garde si un jour prisma fonctionne avec les promise.all pour sqlite*/
@@ -301,6 +302,7 @@ class Webserver {
         for (const event of urlCalendar.events) {
             event.calendarId = urlCalendar.id;
             await event.persist();
+            await urlCalendar.addEvent(event);
         }
         
         return urlCalendar;
@@ -480,10 +482,6 @@ class Webserver {
         let calendar = []
         if (id) {
             calendar = await Calendar.getById(id);
-
-            if (!calendar) {
-                return reply.status(404).send({ error: 'Calendar not found' });
-            }
         }
 
         return reply.status(200).view('calendar.ejs', {
