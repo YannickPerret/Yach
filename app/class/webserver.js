@@ -248,7 +248,6 @@ class Webserver {
 
         const uploadCalendar = new Calendar({
             source: filePath,
-            format: 'ics',
             type: typeCalendar,
             name: nameCalendar,
             class: "PUBLIC",
@@ -286,7 +285,6 @@ class Webserver {
     async handleUrlCalendar(inputCalendarUrl, typeCalendar, nameCalendar, user) {
         const urlCalendar = new Calendar({
             source: inputCalendarUrl,
-            format: 'ics',
             type: typeCalendar,
             name: nameCalendar,
             url: inputCalendarUrl,
