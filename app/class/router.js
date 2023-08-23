@@ -1,6 +1,7 @@
 module.exports = (app, handlers, upload) => {
   app.register((instance, opts, next) => {
-      instance.get('/calendars/', handlers.getCalendars);
+      instance.get('/calendars', handlers.getAllCalendars);
+
       instance.get('/calendar/:id', handlers.getCalendarById);
 
       instance.put('/calendar/:id', handlers.updateCalendar);

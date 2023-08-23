@@ -173,7 +173,6 @@
         .eventFormModal>div {
             display: flex;
             align-items: center;
-            justify-content: space-between;
             width: 100%;
         }
 
@@ -207,6 +206,39 @@
             text-decoration: none;
             cursor: pointer;
         }
+
+        /***** MODAL SETTINGS *****/
+        .calendarAssociated {
+            display: flex;
+            flex-direction: row;
+            justify-content: space-between;
+            width: 100%;
+        }
+
+        .calendarAssociated__selected {
+            width: 49%;
+        }
+
+        .calendarAssociated__add {
+            width: 49%;
+        }
+
+        .calendarAssociated__list {
+            display: flex;
+            flex-direction: column;
+            border: 1px solid black;
+            width: 100%;
+            height: 150px;
+            overflow-y: scroll;
+            gap: 5px;
+            list-style-type: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        .calendarAssociated__selected li {
+            background: #f1f1f1;
+        }
     </style>
 </head>
 
@@ -222,8 +254,6 @@
                 <h3>My Calendars</h3>
                 <ul id="userAllCalendars" class="sidebar-userAllCalendars">
                 </ul>
-
-                <button id="settingsBtn">Settings</button>
             </div>
         </div>
         <div class="calendar-container">
@@ -278,13 +308,37 @@
     </div>
 
     <div class="modal" id="settingsModal">
-        <label>URL public api ics</label>
+        <div class="modal-content">
+            <span class="close-btn" onclick="closeModalSettings()">&times;</span>
 
-        <button id="removeCalendar" class="btnRemoveCalendar">
-            Delete this calendar
-        </button>
+            <form method="POST" enctype="application/x-www-form-urlencoded" id="calendarSettings">
+                <label>Calendar name :</label><input type="text" name="name" />
+                <label>Calendar color :</label><input type="color" name="color" />
+                <label>Calendar link :</label><input type="text" name="link" />
+                <label>Calendar visible :</label><select name="class">
+                    <option value="public">Public</option>
+                    <option value="private">Private</option>
+                </select>
+                <div class="calendarAssociated">
+                    <div class="calendarAssociated__selected">
+                        <label>Calendar associated : </label>
+                        <ul id="calendarAssociated" class="calendarAssociated__list">
+
+                        </ul>
+                    </div>
+                    <div class="calendarAssociated__add">
+                        <label>Associate new calendar : </label>
+                        <ul class="calendarAssociated__list" id="calendarAssociated__addNew">
+
+                        </ul>
+                    </div>
+                </div>
+                <input type="submit" value="Submit" />
+            </form>
+        </div>
     </div>
 </body>
+
 
 <script>
     let fullCalendar;
@@ -304,16 +358,14 @@
         user = <%- JSON.stringify(user) %>;
         userAllCalendars = <%- JSON.stringify(calendars) %>;
 
-        if (!Array.isArray(userAllCalendars)) {
-            userAllCalendars = [userAllCalendars];
-        }
+        console.log(userAllCalendars)
 
         // ajouter une function pour le calendrier par défaut
         currentCalendar = userAllCalendars[0];
 
-        loadUserCalendarList();
-
         events = getAllEventsFromCalendars([currentCalendar]);
+
+        loadUserCalendarList();
 
         fullCalendar = initializeCalendar(events, userAllCalendars.id);
         divError = document.getElementById('message');
@@ -321,6 +373,8 @@
         document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
 
     });
+
+
 
     const loadUserCalendarList = () => {
 
@@ -337,34 +391,42 @@
             a.href = `/users/${user.username}/calendar/${calendar.id}`;
             li.textContent = calendar.name;
             const btn = document.createElement('button');
-            btn.textContent = " Delete";
-            
-            if (calendar.children && calendar.children.length) {
+            const btn2 = document.createElement('button');
+            btn.textContent = " Edit";
+            btn2.textContent = " Delete";
+
+            if (calendar.children && calendar.children.length > 0) {
                 li.textContent += " child : ";
                 calendar.children.forEach(children => {
                     li.textContent += children.name + " ";
                 })
             }
-            
-            btn.addEventListener('click', () => {
-                removeCalendar(calendar)
-            })
-            li.appendChild(btn);
 
             li.addEventListener('click', (element) => {
                 document.querySelectorAll('.selected').forEach(element => element.classList.remove('selected'))
                 li.classList.add('selected');
-                currentCalendar = calendar;
 
-                let events = getAllEventsFromCalendars([currentCalendar])
+                currentCalendar = calendar;
+                events = getAllEventsFromCalendars([currentCalendar])
 
                 fullCalendar = initializeCalendar(events, userAllCalendars.id);
             });
+
+            btn.addEventListener('click', () => {
+                openModalSettings(calendar)
+            })
+
+            btn2.addEventListener('click', () => {
+                removeCalendar(calendar)
+            })
+
+            li.appendChild(btn);
+            li.appendChild(btn2);
+
             li.appendChild(a);
             document.getElementById('userAllCalendars').appendChild(li);
         });
     }
-
 
     const getAllEventsFromCalendars = (calendars) => {
         let allEvents = [];
@@ -410,17 +472,11 @@
         closeModal();
     });
 
-    document.getElementById('settingsBtn').addEventListener('click', () => {
-        openModalSettings();
-    });
-
     document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape') {
             closeModal();
         }
     });
-
-    
 
     const changeView = (viewName) => {
         fullCalendar.changeView(viewName);
@@ -522,29 +578,103 @@
 
     };
 
+    const getAllCalendars = async () => {
+        const response = await fetch(`/api/v1/calendars`, {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        const data = await response.json();
+        return data;
+    }
     //model for setting
     const openModalSettings = async (calendar) => {
-        const modal = document.getElementById('settingsModal');
-        document.getElementById('removeCalendar').addEventListener("click", () => {
-            removeCalendar(calendar)
-        })
 
+        const modal = document.getElementById('settingsModal');
+        const formSettings = document.getElementById('calendarSettings');
+        const calendarAssociated = document.getElementById('calendarAssociated');
+        const calendarAssociated_addNew = document.getElementById('calendarAssociated__addNew');
+
+        let allCalendars = await getAllCalendars();
+
+        let calendarChildren = calendar.children.map(children => children.id)
+
+        if (calendar) {
+            formSettings.name.value = calendar.name;
+            formSettings.color.value = calendar.color;
+            if (calendar.url) {
+                formSettings.link.value = calendar.url;
+            } else {
+                formSettings.link.disabled = true;
+            }
+            formSettings.link.value = calendar.url;
+            formSettings.class.defaultSelected = calendar.class;
+
+            if (calendar.type === 'SHARED') {
+                currentCalendar.children.forEach(children => {
+                    let li = document.createElement('li');
+                    li.appendChild(document.createTextNode(children.name));
+                    //ajouter un attribut id pour le li
+                    li.setAttribute('calendarId', children.id);
+
+                    let supprimerBtn = document.createElement('button');
+                    supprimerBtn.type = 'button';
+                    supprimerBtn.appendChild(document.createTextNode('Supprimer'));
+                    supprimerBtn.onclick = () => {
+                        calendarChildren.splice(calendarChildren.indexOf(children.id), 1)
+                        li.remove();
+                    }
+
+                    li.appendChild(supprimerBtn);
+                    document.getElementById('calendarAssociated').appendChild(li);
+                })
+                allCalendars.forEach(calendar => {
+                    let li = document.createElement('li');
+                    li.appendChild(document.createTextNode(calendar.name));
+                    let ajouterBtn = document.createElement('button');
+                    ajouterBtn.appendChild(document.createTextNode('Ajouter'));
+                    ajouterBtn.type = 'button';
+                    ajouterBtn.onclick = () => {
+                        !calendarChildren.includes(calendar.id) && calendarChildren.push(calendar.id)
+                        let liSub = document.createElement('li');
+                        liSub.appendChild(document.createTextNode(calendar.name));
+                        liSub.setAttribute('calendarId', calendar.id);
+                        let supprimerBtn = document.createElement('button');
+                        supprimerBtn.type = 'button';
+                        supprimerBtn.appendChild(document.createTextNode('Supprimer'));
+                        supprimerBtn.onclick = () => {
+                            calendarChildren.splice(calendarChildren.indexOf(calendar.id), 1)
+                            liSub.remove();
+                        }
+                        liSub.appendChild(supprimerBtn);
+                        document.getElementById('calendarAssociated').appendChild(liSub);
+                        li.remove();
+                    }
+                    li.appendChild(ajouterBtn);
+                    calendarAssociated_addNew.appendChild(li);
+                })
+            }
+        }
         modal.style.display = 'flex';
-    };
-    const removeCalendar = async (calendar) => {
-       await fetch(`/api/v1/calendar/${calendar.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            })
+
+        formSettings.addEventListener("submit", (e) => {
+            e.preventDefault();
+
+            //get all data from form and 
+            let data = new FormData(e.target);
+
+            e.reset();
+        })
     };
 
-    const closeModalSettings = () => {
-        const modal = document.getElementById('settingsModal');
-        const settingsData = document.getElementById('settingsForm');
-        settingsData.reset()
-        modal.style.display = 'none';
+    const removeCalendar = async (calendar) => {
+        await fetch(`/api/v1/calendar/${calendar.id}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
     };
 
     const openModal = async (eventOrDate) => {
@@ -574,6 +704,18 @@
         modal.style.display = 'none';
     };
 
+    const closeModalSettings = () => {
+        const modal = document.getElementById('settingsModal');
+        const settingsData = document.getElementById('calendarSettings');
+        const calendarAssociated = document.getElementById('calendarAssociated');
+        const calendarAssociated_addNew = document.getElementById('calendarAssociated__addNew');
+        calendarAssociated.innerHTML = '';
+        calendarAssociated_addNew.innerHTML = '';
+
+        settingsData.reset()
+        modal.style.display = 'none';
+    }
+
     const initializeCalendar = (events, calendarId) => {
 
         const lastView = localStorage.getItem('lastCalendarView') || 'timeGridWeek';
@@ -586,6 +728,7 @@
             selectable: true,
             //timeZone: 'Europe/Zurich',
             firstDay: 1,
+            eventColor: currentCalendar.color,
             eventClick: info => openModal(info.event),
             eventDrop: info => {
                 if (currentCalendar.rights !== 'Write') {
@@ -656,6 +799,19 @@
         divError.style.display = 'block';
         divError.textContent = message;
     };
+
+    const addNewItemOnCalendarAssociated = () => {
+        let li = this.parentNode;
+        let ul = li.parentNode;
+        ul.removeChild(li);
+        document.getElementById('calendarAssociated').appendChild(li);
+    }
+
+    const removeItemOnCalendarAssociated = () => {
+        let li = this.parentNode;
+        let ul = li.parentNode;
+        ul.removeChild(li);
+    }
 
 </script>
 

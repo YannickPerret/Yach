@@ -100,8 +100,10 @@ class Webserver {
         }
     }
 
-    getCalendars(req, res) {
+    async getAllCalendars(req, reply) {
+        let calendars = await Calendar.getAll();
 
+        reply.send(calendars);
     }
 
     async getCalendarById(req, res) {
@@ -415,8 +417,12 @@ class Webserver {
 
         let user = await User.getByUsername(username);
 
-        if (!user) {
-            return reply.status(404).send({ error: 'User not found' });
+        if (!user || !calendarId) {
+            return reply.status(200).view('calendar.ejs', {
+                title: 'Calendar Page',
+                calendars: [],
+                user: [],
+            });
         }
 
         let calendar = await Calendar.getById(calendarId);
@@ -485,6 +491,7 @@ class Webserver {
         return reply.status(200).view('calendar.ejs', {
             title: 'Calendar Page',
             calendar: calendar,
+            user : []
         });
     }
 }
