@@ -87,6 +87,23 @@ class User {
         return calendars;
     }
 
+    // user have access to this calendar
+    async hasCalendar(calendarId) {
+        const calendar = await Database.db.calendar.findUnique({
+            where: {
+                id: calendarId
+            },
+            include: {
+                calendarUsersAssociations: {
+                    where: {
+                        userId: this.id
+                    }
+                }
+            }
+        });
+        return calendar !== false;
+    }
+
     /**
      * The function `getCalendars` retrieves the calendars associated with a user from the database and
      * returns them as an array of `Calendar` objects.

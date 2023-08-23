@@ -494,6 +494,62 @@ class Webserver {
             user : []
         });
     }
+
+    async updateUserCalendar(req, reply) {
+        let userId = req.params.id;
+        let calendarId = req.params.calendarId;
+        let calendarUpdated = req.body.calendar
+
+        let calendar = await Calendar.getById(calendarId);
+        if (!calendar) {
+            return reply.status(404).send({ error: 'Calendar not found' });
+        }
+        if (calendar.right === "READ") {
+            return reply.status(403).send({ error: 'This calendar is on read only' });
+        }
+
+        let user = await User.getByUsername(userId);
+        if (!user) {
+            return reply.status(404).send({ error: 'User not found' });
+        }
+
+        if(!user.hasCalendar(calendarId)) {
+            return reply.status(403).send({ error: 'You don\'t have the right to update this calendar' });
+        }
+
+        calendar.name = calendarUpdated.name || calendar.name;
+        calendar.class = calendarUpdated.class || calendar.class;
+        calendar.color = calendarUpdated.color || calendar.color;
+        calendar.url = calendarUpdated.url || calendar.url;
+
+        calendarUpdated.childrens.forEach(async (children) => {
+            let childrenCalendar = await Calendar.getById(children);
+            if (!childrenCalendar) {
+                return reply.status(404).send({ error: 'Calendar not found' });
+            }
+
+            if (childrenCalendar.right === "READ") {
+                calendar.right = "READ";
+            }
+
+            if (childrenCalendar.id !== calendarId) {
+                await childrenCalendar.addParentCalendar(calendar);
+            }
+        });
+
+        for (let calendarChild of calendar.children) {
+            if (!calendarUpdated.childrens.includes(calendarChild.id)) {
+                await calendar.removeParentCalendar(calendarChild);
+            }
+        }
+
+        await calendar.persist();
+
+        return reply.status(200).view('calendar.ejs', {
+            title: 'Calendar Page',
+            calendar: calendar,
+        });
+    }
 }
 
 module.exports = Webserver;

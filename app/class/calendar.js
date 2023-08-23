@@ -40,6 +40,7 @@ class Calendar {
         this.type = config.type;
         this.url = config.url;
         this.class = config.class;
+        this.color = config.color;
         this.right = config.right;
         this.users = config.users || [];
         this.syncExpressionCron = config.syncExpressionCron || '0 0 * * *';
@@ -160,6 +161,8 @@ class Calendar {
                 type: this.type,
                 url: this.url,
                 right: this.right,
+                color: this.color,
+                class: this.class,
                 syncExpressionCron: this.syncExpressionCron,
             },
             create: {
@@ -344,13 +347,34 @@ class Calendar {
     }
 
     async addParentCalendar(parentCalendar) {
-        await Database.db.CalendarAssociation.create({
-            data: {
+        await Database.db.CalendarAssociation.upsert({
+            where: {
+                parentCalendarId_childCalendarId: {
+                    parentCalendarId: parentCalendar.id,
+                    childCalendarId: this.id
+                }
+            },
+            update: {},
+            create: {
                 parentCalendarId: parentCalendar.id,
                 childCalendarId: this.id
             }
         });
     }
+
+    async removeParentCalendar(parentCalendar) {
+        console.log(parentCalendar.id, this.id)
+
+        await Database.db.CalendarAssociation.delete({
+            where: {
+                parentCalendarId_childCalendarId: {
+                    parentCalendarId: this.id,
+                    childCalendarId: parentCalendar.id
+                }
+            }
+        });
+    }
+
 
     async getParentCalendars() {
         const parentCalendars = await Database.db.CalendarAssociation.findMany({

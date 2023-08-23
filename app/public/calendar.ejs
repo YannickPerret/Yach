@@ -327,7 +327,7 @@
                         </ul>
                     </div>
                     <div class="calendarAssociated__add">
-                        <label>Associate new calendar : </label>
+                        <label>Available calendars : </label>
                         <ul class="calendarAssociated__list" id="calendarAssociated__addNew">
 
                         </ul>
@@ -636,20 +636,23 @@
                     ajouterBtn.appendChild(document.createTextNode('Ajouter'));
                     ajouterBtn.type = 'button';
                     ajouterBtn.onclick = () => {
-                        !calendarChildren.includes(calendar.id) && calendarChildren.push(calendar.id)
-                        let liSub = document.createElement('li');
-                        liSub.appendChild(document.createTextNode(calendar.name));
-                        liSub.setAttribute('calendarId', calendar.id);
-                        let supprimerBtn = document.createElement('button');
-                        supprimerBtn.type = 'button';
-                        supprimerBtn.appendChild(document.createTextNode('Supprimer'));
-                        supprimerBtn.onclick = () => {
-                            calendarChildren.splice(calendarChildren.indexOf(calendar.id), 1)
-                            liSub.remove();
+                        if (!calendarChildren.includes(calendar.id)) {
+                            calendarChildren.push(calendar.id); // Ajout de l'ID du calendrier à calendarChildren
+                            let liSub = document.createElement('li');
+                            liSub.appendChild(document.createTextNode(calendar.name));
+                            liSub.setAttribute('calendarId', calendar.id);
+
+                            let supprimerBtn = document.createElement('button');
+                            supprimerBtn.type = 'button';
+                            supprimerBtn.appendChild(document.createTextNode('Supprimer'));
+                            supprimerBtn.onclick = () => {
+                                calendarChildren.splice(calendarChildren.indexOf(calendar.id), 1); // Suppression de l'ID du calendrier de calendarChildren
+                                liSub.remove();
+                            }
+                            liSub.appendChild(supprimerBtn);
+                            document.getElementById('calendarAssociated').appendChild(liSub);
+                            li.remove();
                         }
-                        liSub.appendChild(supprimerBtn);
-                        document.getElementById('calendarAssociated').appendChild(liSub);
-                        li.remove();
                     }
                     li.appendChild(ajouterBtn);
                     calendarAssociated_addNew.appendChild(li);
@@ -658,14 +661,39 @@
         }
         modal.style.display = 'flex';
 
-        formSettings.addEventListener("submit", (e) => {
+        formSettings.addEventListener("submit", async (e) => {
             e.preventDefault();
 
-            //get all data from form and 
-            let data = new FormData(e.target);
+            let data = {
+                name: formSettings.name.value,
+                color: formSettings.color.value,
+                url: formSettings.link.value,
+                class: formSettings.class.value,
+                childrens: calendarChildren
+            };
 
-            e.reset();
-        })
+            try {
+                const response = await fetch(`/users/${user.username}/calendars/${currentCalendar.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({calendar : data})
+                });
+                if (response.ok) {
+                    closeModalSettings();
+                } else {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error);
+                }
+            } catch (error) {
+                console.error(error);
+            }
+
+            e.target.reset();
+            closeModalSettings();
+
+        });
     };
 
     const removeCalendar = async (calendar) => {
@@ -799,19 +827,6 @@
         divError.style.display = 'block';
         divError.textContent = message;
     };
-
-    const addNewItemOnCalendarAssociated = () => {
-        let li = this.parentNode;
-        let ul = li.parentNode;
-        ul.removeChild(li);
-        document.getElementById('calendarAssociated').appendChild(li);
-    }
-
-    const removeItemOnCalendarAssociated = () => {
-        let li = this.parentNode;
-        let ul = li.parentNode;
-        ul.removeChild(li);
-    }
 
 </script>
 
