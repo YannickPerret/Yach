@@ -522,7 +522,7 @@ class Webserver {
         calendar.color = calendarUpdated.color || calendar.color;
         calendar.url = calendarUpdated.url || calendar.url;
 
-        calendarUpdated.childrens.forEach(async (children) => {
+        for (let children of calendarUpdated.childrens) {
             let childrenCalendar = await Calendar.getById(children);
             if (!childrenCalendar) {
                 return reply.status(404).send({ error: 'Calendar not found' });
@@ -535,7 +535,7 @@ class Webserver {
             if (childrenCalendar.id !== calendarId) {
                 await childrenCalendar.addParentCalendar(calendar);
             }
-        });
+        };
 
         for (let calendarChild of calendar.children) {
             if (!calendarUpdated.childrens.includes(calendarChild.id)) {
