@@ -88,6 +88,38 @@ class Calendar {
         }
     };
 
+    updateChildrenCalendars = async (calendarUpdated) => {
+        const currentChildIds = this.children.map(child => child.id);
+        const updatedChildIds = calendarUpdated.childrens;
+
+        if (currentChildIds.sort().toString() !== updatedChildIds.sort().toString()) {
+            for (const childId of updatedChildIds) {
+                if (!currentChildIds.includes(childId)) {
+                    const childCalendar = (await Calendar.getById(childId))[0];
+                    if (childCalendar) {
+                        await this.addChildCalendar(childCalendar);
+                    }
+                }
+            }
+
+            for (const childId of currentChildIds) {
+                if (!updatedChildIds.includes(childId)) {
+                    const childCalendar = (await Calendar.getById(childId))[0];
+                    if (childCalendar) {
+                        await this.removeParentCalendar(childCalendar);
+                    }
+                }
+            }
+        }
+    };
+
+    removeOldParentCalendars = async (calendarUpdated) => {
+        for (const calendarChild of this.children) {
+            if (!calendarUpdated.childrens.includes(calendarChild.id)) {
+                await this.removeParentCalendar(calendarChild);
+            }
+        }
+    };
 
     /**
      * Generates an iCal string from the events.
@@ -140,10 +172,7 @@ class Calendar {
             }
         });
 
-        if (!childCalendars) {
-            return [];
-        }
-        return childCalendars.map(childCalendar => new Calendar(childCalendar.childCalendar));
+        return childCalendars ? childCalendars.map(childCalendar => new Calendar(childCalendar.childCalendar)) : [];
     }
 
 
@@ -252,7 +281,7 @@ class Calendar {
     /**
      * Get a calendar instance by its ID.
      * @param {string} id - Unique identifier of the calendar.
-     * @returns {Promise<Calendar>} - Calendar instance or null if not found.
+     * @returns {Promise<[Calendar]>} - Calendar instance or null if not found.
      */
     static async getById(id) {
         try {
@@ -269,27 +298,25 @@ class Calendar {
             });
             
             if (!calendarData) {
-                throw new Error(`Calendar with id ${id} not found.`);
+                return []; // Return an empty array if no calendar is found
             }
-
+    
             const { calendarEventAssociations, childCalendars, ...otherCalendarData } = calendarData;
             const events = calendarEventAssociations.map(association => new Event(association.event));
-
+    
             const calendar = new Calendar({ ...otherCalendarData, events });
-
+    
             // Recursive call to get child calendars and their events
             await this.getChildCalendarsWithEvents(calendar, childCalendars);
-
+    
             calendar.filterDuplicateEvents(calendar);
-
-            //calendar.events = calendar.events.filter((event, index, self) => self.findIndex(e => e.id === event.id) === index);
-
-            return calendar
+    
+            return [calendar]; // Return an array containing the calendar
         } catch (error) {
             console.error("Error fetching calendar by ID:", error);
-            throw error;
+            throw error; // Or return an empty array if you prefer: return [];
         }
-    }
+    }    
 
     static async getChildCalendarsWithEvents(parentCalendar, childAssociations) {
         for (const association of childAssociations) {
@@ -347,6 +374,8 @@ class Calendar {
     }
 
     async addParentCalendar(parentCalendar) {
+        console.log(parentCalendar, this.id)
+
         await Database.db.CalendarAssociation.upsert({
             where: {
                 parentCalendarId_childCalendarId: {
@@ -363,8 +392,6 @@ class Calendar {
     }
 
     async removeParentCalendar(parentCalendar) {
-        console.log(parentCalendar.id, this.id)
-
         await Database.db.CalendarAssociation.delete({
             where: {
                 parentCalendarId_childCalendarId: {
@@ -386,10 +413,7 @@ class Calendar {
             }
         });
 
-        if (!parentCalendars) {
-            return [];
-        }
-        return parentCalendars.map(association => association.parentCalendar);
+        return parentCalendars ? parentCalendars.map(association => association.parentCalendar) : [];
     }
 
 
@@ -400,7 +424,7 @@ class Calendar {
      */
     static async getAll(filter = null) {
         try {
-            let calendarsData
+            let calendarsData;
             if (filter != null) {
                 calendarsData = await Database.db.calendar.findMany({
                     where: {

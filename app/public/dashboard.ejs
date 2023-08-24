@@ -30,7 +30,7 @@
   <% } else { %>
     <h3>Epistec team</h3>
     <% calendars.forEach(function(calendar) { %>
-        <% if (calendar.type == 'PERSONAL') { %>
+        <% if (calendar.type == 'PERSONAL' && calendar.class == 'PUBLIC') { %>
           <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
           <label for="<%= calendar.id %>"><a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a>
           </label><br>
@@ -39,7 +39,7 @@
 
     <h3>Epsitec calendar</h3>
     <% calendars.forEach(function(calendar) { %>
-        <% if (calendar.type == 'PROFESSIONAL') { %>
+        <% if (calendar.type == 'PROFESSIONAL' && calendar.class == 'PUBLIC') { %>
           <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
           <label for="<%= calendar.id %>"><a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a>
           </label><br>
@@ -49,7 +49,7 @@
 
   <h3>Others calendar</h3>
     <% calendars.forEach(function(calendar) { %>
-        <% if (calendar.type == 'OTHER') { %>
+        <% if (calendar.type == 'OTHER' && calendar.class == 'PUBLIC') { %>
           <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
           <label for="<%= calendar.id %>"><a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a>
           </label><br>
@@ -59,7 +59,7 @@
 
   <h3>Shared Calendars (Only check here)</h3>
   <% calendars.forEach(function(calendar) { %>
-    <% if (calendar.type == 'SHARED') { %>
+    <% if (calendar.type == 'SHARED' && calendar.class == 'PUBLIC') { %>
       <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
       <label for="<%= calendar.id %>"><a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a>
       </label><br>

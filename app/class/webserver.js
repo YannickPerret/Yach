@@ -143,7 +143,7 @@ class Webserver {
             return reply.status(404).send({ error: 'Calendar not found' });
         }
 
-        if(calendar.right === "READ") {
+        if (calendar.right === "READ") {
             return reply.status(403).send({ error: 'You don\'t have the right to update this calendar' });
         }
 
@@ -304,7 +304,7 @@ class Webserver {
             await event.persist();
             await urlCalendar.addEvent(event);
         }
-        
+
         return urlCalendar;
     }
 
@@ -317,9 +317,9 @@ class Webserver {
             class: "PUBLIC",
             users: [user]
         });
-    
+
         await ParentCalendar.persist();
-    
+
         for (const selectedCalendar of selectedCalendars) {
             const calendar = await Calendar.getById(selectedCalendar);
             if (calendar.url !== null) {
@@ -364,13 +364,13 @@ class Webserver {
 
     async logout(req, reply) {
         const token = req.headers.authorization.split(' ')[1];
-        if(!token) {
+        if (!token) {
             return reply.status(400).send({ error: 'You are not connected' });
         }
 
         await Auth.logout(token);
         return reply.status(200).view('logout.ejs',
-        { title:'disconnect', error: 'You are now disconnected', token: null });
+            { title: 'disconnect', error: 'You are now disconnected', token: null });
     }
 
     /****** WEB INTERFACE ********/
@@ -381,7 +381,7 @@ class Webserver {
         });
     }
 
-   async getLogout(req, reply) {
+    async getLogout(req, reply) {
         return reply.status(200).view('logout.ejs', {
             title: 'Disconnect page',
         })
@@ -425,15 +425,14 @@ class Webserver {
             });
         }
 
-        let calendar = await Calendar.getById(calendarId);
-       
+        let calendar = await Calendar.getById(calendarId)
+
 
         if (!calendar) {
             return reply.status(404).send({ error: 'Calendar not found' });
         }
 
-        user = await user.getCalendars();
-
+        //user = await user.getCalendars();
         return reply.status(200).view('calendar.ejs', {
             title: 'Calendar Page',
             calendars: calendar,
@@ -486,69 +485,67 @@ class Webserver {
         let calendar = []
         if (id) {
             calendar = await Calendar.getById(id);
+
+            if (calendar[0].class === "PRIVATE") {
+                return reply.status(403).send({
+                    title: 'Calendar Page',
+                    calendars: [],
+                    user: [],
+                    error: 'This calendar is private'
+                });
+            }
         }
 
         return reply.status(200).view('calendar.ejs', {
             title: 'Calendar Page',
-            calendar: calendar,
-            user : []
+            calendars: calendar,
+            user: []
         });
     }
 
-    async updateUserCalendar(req, reply) {
-        let userId = req.params.id;
-        let calendarId = req.params.calendarId;
-        let calendarUpdated = req.body.calendar
+    
+    
+    updateUserCalendar = async (req, reply) => {
+        try {
+            const userId = req.params.id;
+            const calendarId = req.params.calendarId;
+            const calendarUpdated = req.body.calendar;
 
-        let calendar = await Calendar.getById(calendarId);
-        if (!calendar) {
-            return reply.status(404).send({ error: 'Calendar not found' });
-        }
-        if (calendar.right === "READ") {
-            return reply.status(403).send({ error: 'This calendar is on read only' });
-        }
+            const calendarArray = await Calendar.getById(calendarId);
+            const calendar = calendarArray[0];
 
-        let user = await User.getByUsername(userId);
-        if (!user) {
-            return reply.status(404).send({ error: 'User not found' });
-        }
 
-        if(!user.hasCalendar(calendarId)) {
-            return reply.status(403).send({ error: 'You don\'t have the right to update this calendar' });
-        }
-
-        calendar.name = calendarUpdated.name || calendar.name;
-        calendar.class = calendarUpdated.class || calendar.class;
-        calendar.color = calendarUpdated.color || calendar.color;
-        calendar.url = calendarUpdated.url || calendar.url;
-
-        for (let children of calendarUpdated.childrens) {
-            let childrenCalendar = await Calendar.getById(children);
-            if (!childrenCalendar) {
+            if (!calendar) {
                 return reply.status(404).send({ error: 'Calendar not found' });
             }
-
-            if (childrenCalendar.right === "READ") {
-                calendar.right = "READ";
+            if (calendar.right === "READ") {
+                return reply.status(403).send({ error: 'This calendar is on read only' });
             }
 
-            if (childrenCalendar.id !== calendarId) {
-                await childrenCalendar.addParentCalendar(calendar);
+            const user = await User.getByUsername(userId);
+            if (!user || !user.hasCalendar(calendarId)) {
+                return reply.status(404).send({ error: user ? 'You don\'t have the right to update this calendar' : 'User not found' });
             }
-        };
 
-        for (let calendarChild of calendar.children) {
-            if (!calendarUpdated.childrens.includes(calendarChild.id)) {
-                await calendar.removeParentCalendar(calendarChild);
-            }
+            calendar.name = calendarUpdated.name || calendar.name;
+            calendar.class = calendarUpdated.class || calendar.class;
+            calendar.color = calendarUpdated.color || calendar.color;
+            calendar.url = calendarUpdated.url || calendar.url;
+
+            await calendar.updateChildrenCalendars(calendarUpdated); 
+            await calendar.removeOldParentCalendars(calendarUpdated);
+
+            await calendar.persist();
+
+            return reply.status(200).view('calendar.ejs', {
+                title: 'Calendar Page',
+                calendar,
+                user,
+            });
+        } catch (error) {
+            console.error(error);
+            return reply.status(500).send({ error: 'An unexpected error occurred' });
         }
-
-        await calendar.persist();
-
-        return reply.status(200).view('calendar.ejs', {
-            title: 'Calendar Page',
-            calendar: calendar,
-        });
     }
 }
 
