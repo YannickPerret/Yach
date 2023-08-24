@@ -342,7 +342,7 @@ class Webserver {
     async removeCalendar(req, reply) {
         const id = req.params.id
 
-        let calendar = await Calendar.getById(id)
+        let calendar = (await Calendar.getById(id))[0];
         if (calendar) {
             calendar.remove();
         }
@@ -518,7 +518,7 @@ class Webserver {
             if (!calendar) {
                 return reply.status(404).send({ error: 'Calendar not found' });
             }
-            if (calendar.right === "READ") {
+            if (calendar.right === "READ" && calendar.type !== "SHARED") {
                 return reply.status(403).send({ error: 'This calendar is on read only' });
             }
 
@@ -536,6 +536,7 @@ class Webserver {
                 await calendar.updateChildrenCalendars(calendarUpdated); 
             }
 
+            console.log("CALENDAR UPDATED", calendar);
             await calendar.persist();
 
             return reply.status(200).view('calendar.ejs', {

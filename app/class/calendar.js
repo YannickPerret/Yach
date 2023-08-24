@@ -92,8 +92,6 @@ class Calendar {
         const currentChildIds = this.children.map(child => child.id);
         const updatedChildIds = calendarUpdated.childrens;
 
-        console.log(currentChildIds, updatedChildIds)
-
         if (currentChildIds.sort().toString() !== updatedChildIds.sort().toString()) {
             for (const childId of updatedChildIds) {
                 if (!currentChildIds.includes(childId)) {
