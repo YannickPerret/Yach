@@ -92,6 +92,8 @@ class Calendar {
         const currentChildIds = this.children.map(child => child.id);
         const updatedChildIds = calendarUpdated.childrens;
 
+        console.log(currentChildIds, updatedChildIds)
+
         if (currentChildIds.sort().toString() !== updatedChildIds.sort().toString()) {
             for (const childId of updatedChildIds) {
                 if (!currentChildIds.includes(childId)) {
@@ -112,15 +114,6 @@ class Calendar {
             }
         }
     };
-
-    removeOldParentCalendars = async (calendarUpdated) => {
-        for (const calendarChild of this.children) {
-            if (!calendarUpdated.childrens.includes(calendarChild.id)) {
-                await this.removeParentCalendar(calendarChild);
-            }
-        }
-    };
-    
 
     /**
      * Generates an iCal string from the events.
@@ -155,8 +148,12 @@ class Calendar {
      * @returns {Promise<void>}
      */
     async addChildCalendar(calendar) {
-        calendar.parentCalendarId = this.id;
-        await calendar.persist();
+        await Database.db.CalendarAssociation.create({
+            data: {
+                parentCalendarId: this.id,
+                childCalendarId: calendar.id
+            }
+        });
     }
 
     /**

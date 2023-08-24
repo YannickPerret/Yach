@@ -109,7 +109,7 @@ class Webserver {
     async getCalendarById(req, res) {
         let id = req.params.id;
 
-        let calendar = await Calendar.getById(id);
+        let calendar = (await Calendar.getById(id))[0];
 
         let comp = calendar.generateIcal()
 
@@ -244,6 +244,7 @@ class Webserver {
         reply.send({ url: `${process.env.ENDPOINT_URL}:${process.env.ENDPOINT_PORT}/api/v1/calendar/${outputCalendar.id}` });
     }
 
+    // à déplacer dans la class Calendar
     async handleFileUpload(data, typeCalendar, nameCalendar, user) {
         console.log("File upload request received");
         const filePath = data.path;
@@ -336,6 +337,7 @@ class Webserver {
 
         return ParentCalendar;
     }
+    ////////////
 
     async removeCalendar(req, reply) {
         const id = req.params.id
@@ -503,8 +505,6 @@ class Webserver {
         });
     }
 
-    
-    
     updateUserCalendar = async (req, reply) => {
         try {
             const userId = req.params.id;
@@ -533,7 +533,6 @@ class Webserver {
             calendar.url = calendarUpdated.url || calendar.url;
 
             await calendar.updateChildrenCalendars(calendarUpdated); 
-            await calendar.removeOldParentCalendars(calendarUpdated);
 
             await calendar.persist();
 
