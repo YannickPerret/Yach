@@ -532,7 +532,9 @@ class Webserver {
             calendar.color = calendarUpdated.color || calendar.color;
             calendar.url = calendarUpdated.url || calendar.url;
 
-            await calendar.updateChildrenCalendars(calendarUpdated); 
+            if (calendar.type === "SHARED") {
+                await calendar.updateChildrenCalendars(calendarUpdated); 
+            }
 
             await calendar.persist();
 
