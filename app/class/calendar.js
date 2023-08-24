@@ -120,6 +120,7 @@ class Calendar {
             }
         }
     };
+    
 
     /**
      * Generates an iCal string from the events.
@@ -228,7 +229,7 @@ class Calendar {
                     await childCalendar.addEvent(event);
                 }
             }
-            console.log(`Event added to calendar with id: ${this.id}`);
+            console.log(`Event ${event.summary} added to calendar ${this.name}`);
         } catch (error) {
             console.error(`Error adding event to calendar with id: ${this.id}`, error);
             throw error;
