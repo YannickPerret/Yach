@@ -22,7 +22,19 @@ class TaskScheduler {
         console.debug(`Cron - Calendar ${config.name} add sync to queue`)
         return task;
     }
-
+    
+    updateTask(taskName, interval, taskFunc) {
+        const taskToUpdate = this.tasksQueue.find(task => task.name === taskName);
+    
+        if (taskToUpdate) {
+            taskToUpdate.stop();
+            taskToUpdate.expression = interval;
+            taskToUpdate.start(taskFunc);
+            console.log(`Cron - Calendar ${taskName} updated`);
+        } else {
+            console.log(`Cron - Calendar ${taskName} not found`);
+        }
+    }
     removeTask(task) {
         const index = this.tasksQueue.indexOf(task);
         if (index !== -1) {
@@ -36,7 +48,6 @@ class TaskScheduler {
             console.log(`Task ${index + 1}: ${task.getStatus()}`);
         });
     }
-
 
     static getInstance() {
         if (!this.instance) {

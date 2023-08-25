@@ -119,11 +119,7 @@
 
 
       fetch(url, options)
-        .then((response) => {
-          if (response.ok) {
-            return response.json();
-          }   
-        })
+        .then(response => response.json())
         .then((data) => {
           window.location.href = data.url;
         })

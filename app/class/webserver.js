@@ -13,10 +13,11 @@ const Auth = require('./auth');
 
 const Ical = require('./adapter/ical');
 
-const fastifyMulter = require('fastify-multer')
+const fastifyMulter = require('fastify-multer');
+const Task = require('./task');
 
-const cert = fs.readFileSync(path.join(__dirname, '../certs/cert.pem'));
-const key = fs.readFileSync(path.join(__dirname, '../certs/key.pem'));
+//const cert = fs.readFileSync(path.join(__dirname, '../certs/cert.pem'));
+//const key = fs.readFileSync(path.join(__dirname, '../certs/key.pem'));
 
 // Configure multer storage
 
@@ -434,7 +435,6 @@ class Webserver {
             return reply.status(404).send({ error: 'Calendar not found' });
         }
 
-        //user = await user.getCalendars();
         return reply.status(200).view('calendar.ejs', {
             title: 'Calendar Page',
             calendars: calendar,
@@ -514,12 +514,8 @@ class Webserver {
             const calendarArray = await Calendar.getById(calendarId);
             const calendar = calendarArray[0];
 
-
             if (!calendar) {
                 return reply.status(404).send({ error: 'Calendar not found' });
-            }
-            if (calendar.right === "READ" && calendar.type !== "SHARED") {
-                return reply.status(403).send({ error: 'This calendar is on read only' });
             }
 
             const user = await User.getByUsername(userId);
@@ -531,17 +527,23 @@ class Webserver {
             calendar.class = calendarUpdated.class || calendar.class;
             calendar.color = calendarUpdated.color || calendar.color;
             calendar.url = calendarUpdated.url || calendar.url;
+            calendar.syncExpressionCron = calendarUpdated.syncExpressionCron != "0" ? calendarUpdated.syncExpressionCron : calendar.syncExpressionCron;
+            
+            if (calendar.url != '' && Task.validate(calendar.syncExpressionCron) === false) {
+                calendar.syncExpressionCron = "0 0 * * *";
+            }
+            else {
+                calendar.updateTaskScheduler(calendarUpdated);
+            }
 
             if (calendar.type === "SHARED") {
                 await calendar.updateChildrenCalendars(calendarUpdated); 
             }
-
-            console.log("CALENDAR UPDATED", calendar);
             await calendar.persist();
 
             return reply.status(200).view('calendar.ejs', {
                 title: 'Calendar Page',
-                calendar,
+                calendars: calendar,
                 user,
             });
         } catch (error) {

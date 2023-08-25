@@ -140,6 +140,19 @@ class Calendar {
         return this.outputCalendar.toString();
     };
 
+    updateTaskScheduler = async (calendarUpdated) => {
+        const taskSchedulerManager = TaskScheduler.getInstance();
+        const currentCron = this.syncExpressionCron;
+        const updatedCron = calendarUpdated.syncExpressionCron;
+    
+        if (currentCron !== updatedCron) {
+            console.log(`Cron - Calendar ${this.name} updated`)
+            taskSchedulerManager.updateTask(`Sync ${this.name}`, updatedCron, this.sync);
+        } else {
+            taskSchedulerManager.addTask(updatedCron, this.sync, { name: `Sync ${this.name}` });
+        }
+    };
+
     /**
      * Add a child calendar.
      * @param {Calendar} calendar - Calendar instance to be added as child.
@@ -465,14 +478,16 @@ class Calendar {
             where: { calendarId: this.id }
         });
 
-        const eventIds = await Database.db.calendarEventAssociation.findMany({
-            where: { calendarId: this.id },
-            select: { eventId: true }
-        }).then(events => events.map(e => e.eventId));
+        if (this.type !== 'SHARED') {
+            const eventIds = await Database.db.calendarEventAssociation.findMany({
+                where: { calendarId: this.id },
+                select: { eventId: true }
+            }).then(events => events.map(e => e.eventId));
 
-        await Database.db.event.deleteMany({
-            where: { id: { in: eventIds } }
-        });
+            await Database.db.event.deleteMany({
+                where: { id: { in: eventIds } }
+            });
+        }
 
         await Database.db.CalendarAssociation.deleteMany({
             where: { OR: [{ parentCalendarId: this.id }, { childCalendarId: this.id }] }

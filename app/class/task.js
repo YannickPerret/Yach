@@ -33,6 +33,10 @@ class Task {
     getStatus() {
         return this.task ? "Started" : 'Not started';
     }
+    
+    static validate(expression) {
+        return cron.validate(expression);
+    }
 }
 
 module.exports = Task;
