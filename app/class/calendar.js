@@ -472,46 +472,56 @@ class Calendar {
     /* rework delete function */
     async remove() {
         try {
-
+            // Suppression des associations pour les calendriers partagés
             if (this.type === 'SHARED') {
                 await Database.db.calendarEventAssociation.deleteMany({
                     where: { calendarId: this.id }
                 });
             } else {
+                // Trouver les IDs des événements associés à ce calendrier
                 const eventIds = await Database.db.calendarEventAssociation.findMany({
                     where: { calendarId: this.id },
                     select: { eventId: true }
                 }).then(events => events.map(e => e.eventId));
-
-                console.log("Events to delete:", eventIds)
-
+    
+                console.log("Events to delete:", eventIds);
+    
+                // Supprimer les associations d'événement avant de supprimer les événements eux-mêmes
+                await Database.db.calendarEventAssociation.deleteMany({
+                    where: { eventId: { in: eventIds } }
+                });
+    
+                // Suppression des événements eux-mêmes
                 await Database.db.event.deleteMany({
                     where: { id: { in: eventIds } }
                 });
-
             }
-
-
+    
+            // Suppression des associations de calendrier
             await Database.db.calendarAssociation.deleteMany({
                 where: { OR: [{ parentCalendarId: this.id }, { childCalendarId: this.id }] }
             });
-
+    
+            // Suppression des associations d'utilisateur de calendrier
             await Database.db.calendarUserAssociation.deleteMany({
                 where: { calendarId: this.id }
             });
-
+    
+            // Suppression du calendrier lui-même
             await Database.db.calendar.delete({
                 where: { id: this.id }
             });
-
-            console.log("Calendar removed with id:", this.id)
-
+    
+            console.log("Calendar removed with id:", this.id);
+    
+            // Suppression de l'objet (facultatif et dépend de votre logique d'application)
             delete this;
-
+    
         } catch (e) {
             console.debug(e);
         }
     }
+    
 
 
     // add to task scheduler to sync
