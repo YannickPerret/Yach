@@ -328,8 +328,8 @@ class Webserver {
                 ParentCalendar.right = "READ";
                 updateParentCalendar = true;
             }
-            await calendar.addParentCalendar(ParentCalendar);
-            await calendar.persist();
+            await calendar[0].addParentCalendar(ParentCalendar);
+            await calendar[0].persist();
         }
 
         if (updateParentCalendar) {
@@ -536,9 +536,13 @@ class Webserver {
                 calendar.updateTaskScheduler(calendarUpdated);
             }
 
+            console.log(calendar);
             if (calendar.type === "SHARED") {
+                console.log("lol")
+
                 await calendar.updateChildrenCalendars(calendarUpdated); 
             }
+
             await calendar.persist();
 
             return reply.status(200).view('calendar.ejs', {

@@ -383,8 +383,6 @@ class Calendar {
     }
 
     async addParentCalendar(parentCalendar) {
-        console.log(parentCalendar, this.id)
-
         await Database.db.CalendarAssociation.upsert({
             where: {
                 parentCalendarId_childCalendarId: {
