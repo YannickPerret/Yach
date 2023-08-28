@@ -74,13 +74,13 @@ class Calendar {
             }
             return allEvents;
         };
-    
+
         const allEvents = collectAllEvents(calendar);
 
         const uniqueEvents = allEvents.filter((event, index, self) => self.findIndex(e => e.id === event.id) === index);
-    
+
         calendar.events = uniqueEvents;
-    
+
         if (calendar.children) {
             for (const child of calendar.children) {
                 child.events = [];
@@ -144,7 +144,7 @@ class Calendar {
         const taskSchedulerManager = TaskScheduler.getInstance();
         const currentCron = this.syncExpressionCron;
         const updatedCron = calendarUpdated.syncExpressionCron;
-    
+
         if (currentCron !== updatedCron) {
             console.log(`Cron - Calendar ${this.name} updated`)
             taskSchedulerManager.updateTask(`Sync ${this.name}`, updatedCron, this.sync);
@@ -305,27 +305,27 @@ class Calendar {
                     childCalendars: true,
                 },
             });
-            
+
             if (!calendarData) {
                 return []; // Return an empty array if no calendar is found
             }
-    
+
             const { calendarEventAssociations, childCalendars, ...otherCalendarData } = calendarData;
             const events = calendarEventAssociations.map(association => new Event(association.event));
-    
+
             const calendar = new Calendar({ ...otherCalendarData, events });
-    
+
             // Recursive call to get child calendars and their events
             await this.getChildCalendarsWithEvents(calendar, childCalendars);
-    
+
             calendar.filterDuplicateEvents(calendar);
-    
+
             return [calendar]; // Return an array containing the calendar
         } catch (error) {
             console.error("Error fetching calendar by ID:", error);
             throw error; // Or return an empty array if you prefer: return [];
         }
-    }    
+    }
 
     static async getChildCalendarsWithEvents(parentCalendar, childAssociations) {
         for (const association of childAssociations) {
@@ -469,40 +469,45 @@ class Calendar {
         }
     }
 
+    /* rework delete function */
     async remove() {
         try {
 
-        await Database.db.calendarEventAssociation.deleteMany({
-            where: { calendarId: this.id }
-        });
+            if (this.type === 'SHARED') {
+                await Database.db.calendarEventAssociation.deleteMany({
+                    where: { calendarId: this.id }
+                });
+            } else {
+                const eventIds = await Database.db.calendarEventAssociation.findMany({
+                    where: { calendarId: this.id },
+                    select: { eventId: true }
+                }).then(events => events.map(e => e.eventId));
 
-        if (this.type !== 'SHARED') {
-            const eventIds = await Database.db.calendarEventAssociation.findMany({
-                where: { calendarId: this.id },
-                select: { eventId: true }
-            }).then(events => events.map(e => e.eventId));
+                console.log("Events to delete:", eventIds)
 
-            await Database.db.event.deleteMany({
-                where: { id: { in: eventIds } }
+                await Database.db.event.deleteMany({
+                    where: { id: { in: eventIds } }
+                });
+
+            }
+
+
+            await Database.db.calendarAssociation.deleteMany({
+                where: { OR: [{ parentCalendarId: this.id }, { childCalendarId: this.id }] }
             });
-        }
 
-        await Database.db.CalendarAssociation.deleteMany({
-            where: { OR: [{ parentCalendarId: this.id }, { childCalendarId: this.id }] }
-        });
+            await Database.db.calendarUserAssociation.deleteMany({
+                where: { calendarId: this.id }
+            });
 
-        await Database.db.CalendarUserAssociation.deleteMany({
-            where: { calendarId: this.id }
-        });
+            await Database.db.calendar.delete({
+                where: { id: this.id }
+            });
 
-        await Database.db.calendar.delete({
-            where: { id: this.id }
-        });
-        
-        console.log("Calendar removed with id:", this.id)
+            console.log("Calendar removed with id:", this.id)
 
-        delete this;
-            
+            delete this;
+
         } catch (e) {
             console.debug(e);
         }
