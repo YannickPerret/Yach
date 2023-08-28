@@ -123,10 +123,10 @@
             display: flex;
             flex-direction: column;
             background-color: #fefefe;
-            margin: 5% auto;
+            margin: 3% auto;
             padding: 30px;
             border: 1px solid #888;
-            width: 60%;
+            width: 65%;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
             font-size: 18px;
@@ -189,6 +189,16 @@
         .eventFormModal>div:nth-child(4)>div {
             display: flex;
             width: 100%;
+        }
+
+        .eventModel__frequency{
+            display: flex;
+            flex-direction: column;
+        }
+
+        .eventModel__frequency span{
+            display :flex;
+            flex-direction: row;
         }
 
 
@@ -275,12 +285,8 @@
             <h2>Edit Event</h2>
             <form id="eventForm" class="eventFormModal">
                 <div>
-                    <label for="calendarId">Calendar ID:</label>
-                    <input type="text" id="calendarId" name="calendarId" disabled>
-                </div>
-                <div>
-                    <label for="eventId">Event ID:</label>
-                    <input type="text" id="eventId" name="eventId" disabled>
+                    <input type="hidden" id="calendarId" name="calendarId" disabled>
+                    <input type="hidden" id="eventId" name="eventId" disabled >
                 </div>
                 <div>
                     <label for="summary">Summary:</label>
@@ -295,6 +301,35 @@
                         <label for="endDate">End Date:</label>
                         <input type="datetime-local" id="endDate" name="endDate">
                     </div>
+                </div>
+
+                <div class="eventModel__frequency">
+                    <fieldset for="frequency">
+                        <legend>Frequency</legend>
+                        <div>
+                            <select id="frequency" name="frequency">
+                            <option value="daily">Quotidien</option>
+                            <option value="weekly">Hebdomadaire</option>
+                            <option value="monthly">Mensuel</option>
+                            <option value="bimestriel">Bimestriel</opton>
+                            <option value="semestriel">Semestriel</option>
+                            <option value="yearly">Annuel</option>
+                            </select>
+                        </div>
+                        <span>
+                            <input type="radio" name="each" value="openDay" /><label for="every">Chaque:</label>
+                            <input type="number" id="every" name="every" min="1" max="31"><label for="every">jour(s)</label>    
+                        </span>
+                        
+                        <span>
+                            <input type="radio" name="each" value="businessDay" /><label for="every">Chaque jour ouvrable</label>
+                        </span>
+
+                        <span>
+                            <label>Date de fin de récurrence : </label>
+                            <input type="date" name="endRecurrence" id="endRecurrence" />
+                        </span>
+                    </fieldset>
                 </div>
                 <div>
                     <label for="description">Description:</label>
@@ -716,13 +751,10 @@
                     },
                     body: JSON.stringify({ calendar: data })
                 })
-                    .then(response => response.json())
+                    .then(responses => responses.json())
                     .then(data => {
                         closeModalSettings();
                     })
-                    .catch(error => {
-                        throw new Error(error);
-                    });
             } catch (error) {
                 console.error(error);
                 showErrorMessage(error)
