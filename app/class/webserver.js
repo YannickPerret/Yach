@@ -140,11 +140,12 @@ class Webserver {
         // Get the calendar by its id
         const calendar = await Calendar.getById(calendarId);
 
-        if (!calendar) {
+        if (!calendar[0]) {
             return reply.status(404).send({ error: 'Calendar not found' });
         }
 
-        if (calendar.right === "READ") {
+        if (calendar[0].right === "READ") {
+            console.debug("Calendar is read only")
             return reply.status(403).send({ error: 'You don\'t have the right to update this calendar' });
         }
 
@@ -173,7 +174,7 @@ class Webserver {
                         calendarId: calendarId
                     });
                     await newEvent.persist();
-                    await calendar.addEvent(newEvent);
+                    await calendar[0].addEvent(newEvent);
                 }
             }
         } else if (typeof eventData === 'object') {
@@ -195,8 +196,10 @@ class Webserver {
                     calendarId: calendarId
                 });
 
+                console.log(newEvent)
+
                 await newEvent.persist();
-                await calendar.addEvent(newEvent);
+                await calendar[0].addEvent(newEvent);
 
             }
 
@@ -324,7 +327,7 @@ class Webserver {
 
         for (const selectedCalendar of selectedCalendars) {
             const calendar = await Calendar.getById(selectedCalendar);
-            if (calendar.url !== null) {
+            if (calendar[0].url !== null) {
                 ParentCalendar.right = "READ";
                 updateParentCalendar = true;
             }
@@ -345,6 +348,7 @@ class Webserver {
 
         let calendar = (await Calendar.getById(id))[0];
         if (calendar) {
+            console.log(calendar)
             calendar.remove();
         }
     }
@@ -536,22 +540,16 @@ class Webserver {
                 calendar.updateTaskScheduler(calendarUpdated);
             }
 
-            console.log(calendar);
-            if (calendar.type === "SHARED") {
-                console.log("lol")
-
+           if (calendar.type === "SHARED") {
                 await calendar.updateChildrenCalendars(calendarUpdated); 
             }
 
             await calendar.persist();
 
-            return reply.status(200).view('calendar.ejs', {
-                title: 'Calendar Page',
-                calendars: calendar,
-                user,
-            });
+            return reply.status(200).send({ calendar: [calendar], user: user });
+
         } catch (error) {
-            console.error(error);
+            console.log(error);
             return reply.status(500).send({ error: 'An unexpected error occurred' });
         }
     }
