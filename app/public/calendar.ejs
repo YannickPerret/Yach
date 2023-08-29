@@ -418,6 +418,13 @@
                     <label for="description">Description:</label>
                     <textarea id="description" name="description"></textarea>
                 </div>
+
+                <div>
+                    <label for="eventCalendarSelection">Sélectionner des calendriers :</label>
+                    <select id="eventCalendarSelection" name="eventCalendarSelection" multiple>
+                        <option selected>Default</option>
+                    </select>
+                </div>
                 <div>
                     <input type="submit" value="Update Event">
                 </div>
@@ -563,22 +570,26 @@
     }
 
     const getAllEventsFromCalendars = (calendar) => {
-        let allEvents = [];
+    let allEvents = [];
 
-        // Ajouter les événements du calendrier actuel
-        if (calendar && calendar.events) {
-            allEvents = allEvents.concat(calendar.events);
+    // Ajouter les événements du calendrier actuel
+    if (calendar && calendar.events) {
+        allEvents = allEvents.concat(
+            calendar.events.map(event => ({ ...event, calendarColor: calendar.color }))
+        );
+    }
+
+    // Si le calendrier a des enfants, les traiter récursivement
+    if (calendar && calendar.children) {
+        for (const child of calendar.children) {
+            allEvents = allEvents.concat(getAllEventsFromCalendars(child));
         }
+    }
 
-        // Si le calendrier a des enfants, les traiter récursivement
-        if (calendar && calendar.children) {
-            for (const child of calendar.children) {
-                allEvents = allEvents.concat(getAllEventsFromCalendars(child));
-            }
-        }
+    return allEvents;
+};
 
-        return allEvents;
-    };
+
 
 
 
@@ -593,12 +604,14 @@
         const descriptionInput = document.getElementById('description').value;
         const recurrenceType = document.getElementById('recurrence-type').value;
 
-
+        const selectElement = document.getElementById('eventCalendarSelection');
+        const selectedOptions = Array.from(selectElement.selectedOptions);
+        const selectedCalendarIds = selectedOptions.map(option => option.value).filter(value => value !== 'Default');
+        
 
         if (new Date(startDateInput) >= new Date(endDateInput)) {
             console.log("La date de début doit être inférieure à la date de fin !");
         }
-
 
         if (doesEventOverlap(startDateInput, endDateInput)) {
             console.log("Un événement existe déjà pour cette plage horaire!");
@@ -611,11 +624,25 @@
             startDate: startDateInput,
             endDate: endDateInput,
             description: descriptionInput,
+            selectedCalendar: selectedCalendarIds,
         };
 
-        await submitEvent(event.calendarId, event);
+        await fetch(`/api/v1/calendar/${currentCalendar.id}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(event),
+        })
 
-        closeModal();
+        .then(response => response.json())
+        .then(data => {
+            closeModal();
+        })
+        .catch(error => {
+            console.error(error);
+            showErrorMessage(error)
+        });
     });
 
     document.addEventListener('keydown', (event) => {
@@ -624,6 +651,31 @@
             closeModalSettings();
         }
     });
+
+    const populateCalendarDropdown = () =>  {
+    // Effacer les options existantes
+    const selectElement = document.getElementById('eventCalendarSelection');
+    while (selectElement.firstChild) {
+        selectElement.removeChild(selectElement.firstChild);
+    }
+
+    // Ajouter l'option par défaut
+    let defaultOption = document.createElement('option');
+    defaultOption.value = 'Default';
+    defaultOption.text = 'Default';
+    defaultOption.selected = true;
+    selectElement.appendChild(defaultOption);
+
+    if (currentCalendar && currentCalendar.type === 'SHARED') {
+        currentCalendar.children.forEach(child => {
+            let option = document.createElement('option');
+            option.value = child.id;
+            option.text = child.name;
+            selectElement.appendChild(option);
+        });
+    }
+}
+
 
     const changeView = (viewName) => {
         fullCalendar.changeView(viewName);
@@ -681,42 +733,6 @@
             showErrorMessage(error)
             info.revert();
         }
-    };
-
-    const submitEvent = async (event) => {
-        const eventForm = document.getElementById('eventForm').value;
-        const idInput = document.getElementById('eventId').value;
-        const summaryInput = document.getElementById('summary').value;
-        const startDateInput = document.getElementById('startDate').value;
-        const endDateInput = document.getElementById('endDate').value;
-        const descriptionInput = document.getElementById('description').value;
-
-        const eventToUpdate = {
-            calendarId: event.calendarId || currentCalendar.id,
-            id: idInput || null,
-            summary: summaryInput,
-            start: startDateInput,
-            end: endDateInput,
-            description: descriptionInput,
-        };
-
-        await fetch(`/api/v1/calendar/${currentCalendar.id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(eventToUpdate),
-        })
-
-        .then(response => response.json())
-        .then(data => {
-            closeModal();
-        })
-        .catch(error => {
-            console.error(error);
-            showErrorMessage(error)
-        });
-
     };
 
     const getAllCalendars = async () => {
@@ -883,20 +899,26 @@
         const endDateInput = document.getElementById('endDate');
         const descriptionInput = document.getElementById('description');
         const eventForm = document.getElementById('eventForm');
+        const eventUserSelection = document.getElementById('eventUserSelection');
 
         calendarIdInput.value = currentCalendar.id;
         eventIdInput.value = eventOrDate.id || null;
         summaryInput.value = eventOrDate.title || '';
         startDateInput.value = formatDateToDatetimeLocal(eventOrDate.start || new Date(eventOrDate));
         endDateInput.value = formatDateToDatetimeLocal(eventOrDate.end || new Date(eventOrDate));
+
+    
+        populateCalendarDropdown();
         eventOrDate.extendedProps?.description === undefined ? descriptionInput.placeholder = 'Your description here' : descriptionInput.value = eventOrDate.extendedProps.description;
 
+        
         modal.style.display = 'flex';
     };
 
     const closeModal = () => {
         const modal = document.getElementById('eventModal');
         const eventData = document.getElementById('eventForm');
+        
         eventData.reset()
         modal.style.display = 'none';
     };
@@ -915,6 +937,17 @@
 
     const initializeCalendar = (events, calendarId) => {
 
+        events = events.map(event => ({
+            id: event.id,
+            title: event.summary,
+            start: event.start,
+            end: event.end,
+            calendarId: event.calendarId,
+            description: event.description,
+            backgroundColor: event.calendarColor ? event.calendarColor : (currentCalendar?.color ? currentCalendar.color : '#378006'),
+            borderColor: event.calendarColor ? event.calendarColor : (currentCalendar?.color ? currentCalendar.color : '#378006')
+        }));
+
         const lastView = localStorage.getItem('lastCalendarView') || 'timeGridWeek';
 
         const calendarEl = document.getElementById('calendar');
@@ -925,7 +958,7 @@
             selectable: true,
             //timeZone: 'Europe/Zurich',
             firstDay: 1,
-            eventColor: currentCalendar?.color ? currentCalendar.color : '#378006',
+            //eventColor: currentCalendar?.color ? currentCalendar.color : '#378006',
             eventClick: info => openModal(info.event),
             eventDrop: info => {
                 if (currentCalendar.rights !== 'Write') {
@@ -954,17 +987,7 @@
                 }
             },
             select: info => openModal(info),
-            events:
-                events.map(event => ({
-                    id: event.id,
-                    title: event.summary,
-                    start: event.start,
-                    end: event.end,
-                    calendarId: currentCalendar.id,
-                    description: event.description,
-                    eventColor: currentCalendar?.color ? currentCalendar.color : '#378006',
-                }))
-
+            events: events
         });
 
         fullCalendar.render();

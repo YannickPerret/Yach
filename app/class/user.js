@@ -153,6 +153,11 @@ class User {
     
         return calendar;
     }
+
+    static async getAll() {
+        const users = await Database.db.user.findMany();
+        return users.map(user => new User(user));
+    }
 }
 
 module.exports = User;

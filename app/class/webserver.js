@@ -129,12 +129,13 @@ class Webserver {
         res.status(207).send();  // 207 Multi-Status is commonly used for PROPFIND responses
     }
 
-    async updateCalendar(req, reply) {
-        console.log("Update calendar request received");
+    /** UPDATE EVENT IN CALENDAR  **/
+    updateEventCalendar = async (req, reply) => {
 
         let calendarId = req.params.id;
         let eventData = req.body;
-
+        let eventToPersist
+        console.log("Update calendar request received");
         console.log("Calendar ID:", calendarId);
 
         // Get the calendar by its id
@@ -143,71 +144,76 @@ class Webserver {
         if (!calendar[0]) {
             return reply.status(404).send({ error: 'Calendar not found' });
         }
-
         if (calendar[0].right === "READ") {
-            console.debug("Calendar is read only")
+            console.debug("Calendar is read only");
             return reply.status(403).send({ error: 'You don\'t have the right to update this calendar' });
         }
 
         if (typeof eventData === 'string' && eventData.startsWith("BEGIN:VCALENDAR")) {
-            // Handle ICS data
+            // Handle ICS data  
             let jcalData = Ical.parse(eventData);
             let comp = Ical.component(jcalData);
-            console.log("2Event data:");
 
             for (let event of comp.getAllSubcomponents('vevent')) {
                 let uid = event.getFirstPropertyValue('uid');
-                const existingEvent = await Event.getById(uid);
 
-                if (existingEvent) {
-                    existingEvent.summary = event.getFirstPropertyValue('summary');
-                    existingEvent.start = event.getFirstPropertyValue('dtstart')//.toJSDate();
-                    existingEvent.end = event.getFirstPropertyValue('dtend')//.toJSDate();
-                    await existingEvent.persist();
+                eventToPersist = await Event.getById(uid);
+
+                if (eventToPersist) {
+                    eventToPersist.summary = event.getFirstPropertyValue('summary');
+                    eventToPersist.start = event.getFirstPropertyValue('dtstart');
+                    eventToPersist.end = event.getFirstPropertyValue('dtend');
+                    await eventToPersist.persist();
                 } else {
-                    let newEvent = new Event({
+                    eventToPersist = new Event({
                         id: event.getFirstPropertyValue('uid'),
-                        start: event.getFirstPropertyValue('dtstart'),//.toJSDate(),
-                        end: event.getFirstPropertyValue('dtend'),//.toJSDate(),
+                        start: event.getFirstPropertyValue('dtstart'),
+                        end: event.getFirstPropertyValue('dtend'),
                         summary: event.getFirstPropertyValue('summary'),
                         transp: event.getFirstPropertyValue('transp'),
                         calendarId: calendarId
                     });
-                    await newEvent.persist();
-                    await calendar[0].addEvent(newEvent);
+                    //await newEvent.persist();
+                    await calendar[0].addEvent(eventToPersist);
                 }
             }
         } else if (typeof eventData === 'object') {
+            eventToPersist = await Event.getById(eventData.eventId);
 
-            const existingEvent = await Event.getById(eventData.id);
 
-            if (existingEvent) {
-                existingEvent.summary = eventData.summary;
-                existingEvent.start = new Date(eventData.start).toISOString();
-                existingEvent.end = new Date(eventData.end).toISOString();
-                existingEvent.description = eventData.description || null;
-                await existingEvent.persist();
+            if (eventToPersist) {
+                console.log(eventData)
+                eventToPersist.summary = eventData.summary;
+                eventToPersist.start = new Date(eventData.startDate).toISOString();
+                eventToPersist.end = new Date(eventData.endDate).toISOString();
+                eventToPersist.description = eventData.description || null;
+                await eventToPersist.persist();
             } else {
-                let newEvent = new Event({
-                    start: new Date(eventData.start).toISOString(),
-                    end: new Date(eventData.end).toISOString(),
+                eventToPersist = new Event({
+                    start: new Date(eventData.startDate).toISOString(),
+                    end: new Date(eventData.endDate).toISOString(),
                     summary: eventData.summary,
-                    description: eventData.description || null,
+                    description: eventData.description || '',
                     calendarId: calendarId
                 });
-
-                console.log(newEvent)
-
-                await newEvent.persist();
-                await calendar[0].addEvent(newEvent);
-
+                if (calendar[0].type === 'SHARED' && eventData.selectedCalendar?.length > 0) {
+                    for (const childCalendar of calendar[0].children) {
+                        if (eventData.selectedCalendar.includes(childCalendar.id)) {
+                            await childCalendar.addEvent(eventToPersist);
+                        }
+                        else
+                        console.log("Skipping event addition for non-selected shared calendar");
+                    }
+                } else {
+                    await calendar[0].addEvent(eventToPersist);
+                }
             }
-
         } else {
             return reply.status(400).send({ error: 'Invalid data format' });
         }
 
-        reply.send({ error: 'Calendar updated successfully' });
+        return reply.status(200).send({ message: 'Calendar updated successfully' });
+
     }
 
     submitCalendar = async (req, reply) => {
@@ -402,6 +408,11 @@ class Webserver {
         });
     }
 
+    async getUsers(req, reply) {
+        let users = await User.getAll();
+        return reply.status(200).send({ users: users });
+    }
+
     async getUserCalendars(req, reply) {
         let username = req.params.id;
         let user = await User.getByUsername(username);
@@ -433,7 +444,6 @@ class Webserver {
         }
 
         let calendar = await Calendar.getById(calendarId)
-
 
         if (!calendar) {
             return reply.status(404).send({ error: 'Calendar not found' });
@@ -532,7 +542,7 @@ class Webserver {
             calendar.color = calendarUpdated.color || calendar.color;
             calendar.url = calendarUpdated.url || calendar.url;
             calendar.syncExpressionCron = calendarUpdated.syncExpressionCron != "0" ? calendarUpdated.syncExpressionCron : calendar.syncExpressionCron;
-            
+
             if (calendar.url != '' && Task.validate(calendar.syncExpressionCron) === false) {
                 calendar.syncExpressionCron = "0 0 * * *";
             }
@@ -540,8 +550,8 @@ class Webserver {
                 calendar.updateTaskScheduler(calendarUpdated);
             }
 
-           if (calendar.type === "SHARED") {
-                await calendar.updateChildrenCalendars(calendarUpdated); 
+            if (calendar.type === "SHARED") {
+                await calendar.updateChildrenCalendars(calendarUpdated);
             }
 
             await calendar.persist();

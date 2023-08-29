@@ -227,6 +227,9 @@ class Calendar {
   */
     async addEvent(event) {
         try {
+
+            await event.persist();
+
             if (this.type !== "SHARED") {
                 await this.#associateEventWithCalendar(event.id);
             }
@@ -307,25 +310,24 @@ class Calendar {
             });
 
             if (!calendarData) {
-                return []; // Return an empty array if no calendar is found
+                return [];
             }
 
             const { calendarEventAssociations, childCalendars, ...otherCalendarData } = calendarData;
             const events = calendarEventAssociations.map(association => new Event(association.event));
-
             const calendar = new Calendar({ ...otherCalendarData, events });
 
-            // Recursive call to get child calendars and their events
             await this.getChildCalendarsWithEvents(calendar, childCalendars);
 
             calendar.filterDuplicateEvents(calendar);
 
-            return [calendar]; // Return an array containing the calendar
+            return [calendar];
         } catch (error) {
             console.error("Error fetching calendar by ID:", error);
-            throw error; // Or return an empty array if you prefer: return [];
+            throw error;
         }
     }
+
 
     static async getChildCalendarsWithEvents(parentCalendar, childAssociations) {
         for (const association of childAssociations) {
@@ -338,21 +340,26 @@ class Calendar {
                         }
                     },
                     childCalendars: true,
+                    calendarUsersAssociations: {
+                        include: {
+                            user: true
+                        }
+                    }
                 },
             });
 
-            const { calendarEventAssociations, childCalendars, ...otherChildCalendarData } = childCalendarData;
+            const { calendarEventAssociations, childCalendars, calendarUsersAssociations, ...otherChildCalendarData } = childCalendarData;
             const childEvents = calendarEventAssociations.map(association => new Event(association.event));
+            const childUsers = calendarUsersAssociations.map(association => association.user);
 
-            const childCalendar = new Calendar({ ...otherChildCalendarData, events: childEvents });
+            const childCalendar = new Calendar({ ...otherChildCalendarData, events: childEvents, users: childUsers });
 
-            // Assuming parentCalendar has a children array to store child calendars
             parentCalendar.children.push(childCalendar);
 
-            // Recursive call to fetch child calendars of this child calendar
             await this.getChildCalendarsWithEvents(childCalendar, childCalendars);
         }
     }
+
 
     /**
      * Gets calendars by a specified field and value.
@@ -483,45 +490,45 @@ class Calendar {
                     where: { calendarId: this.id },
                     select: { eventId: true }
                 }).then(events => events.map(e => e.eventId));
-    
+
                 console.log("Events to delete:", eventIds);
-    
+
                 // Supprimer les associations d'événement avant de supprimer les événements eux-mêmes
                 await Database.db.calendarEventAssociation.deleteMany({
                     where: { eventId: { in: eventIds } }
                 });
-    
+
                 // Suppression des événements eux-mêmes
                 await Database.db.event.deleteMany({
                     where: { id: { in: eventIds } }
                 });
             }
-    
+
             // Suppression des associations de calendrier
             await Database.db.calendarAssociation.deleteMany({
                 where: { OR: [{ parentCalendarId: this.id }, { childCalendarId: this.id }] }
             });
-    
+
             // Suppression des associations d'utilisateur de calendrier
             await Database.db.calendarUserAssociation.deleteMany({
                 where: { calendarId: this.id }
             });
-    
+
             // Suppression du calendrier lui-même
             await Database.db.calendar.delete({
                 where: { id: this.id }
             });
-    
+
             console.log("Calendar removed with id:", this.id);
-    
+
             // Suppression de l'objet (facultatif et dépend de votre logique d'application)
             delete this;
-    
+
         } catch (e) {
             console.debug(e);
         }
     }
-    
+
 
 
     // add to task scheduler to sync

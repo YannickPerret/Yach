@@ -69,16 +69,28 @@ class Event {
    * @returns {Promise<void>}
    */
   async persist() {
-    const storedEvent = await Database.db.event.upsert({
-      where: {
-        id: this.id
-      },
-      update: this._eventData(),
-      create: this._eventData()
-    });
+    try {
 
+      const storedEvent = await Database.db.event.upsert({
+        where: {
+          id: this.id
+        },
+        update: this._eventData(),
+        create: this._eventData()
+      });
 
-    //await this._associateWithCalendar(storedEvent.id);
+      //await this._associateWithCalendar(storedEvent.id);
+
+      if(storedEvent){
+        console.log(`Event ${storedEvent.summary} created/updated successfully`);
+      }
+      else
+      {
+        throw new Error(`Error in Event ${storedEvent.summary}`);
+      }
+    }catch(err){
+      console.error(err);
+    }
   }
 
    /**
