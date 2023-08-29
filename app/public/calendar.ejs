@@ -249,6 +249,10 @@
         .calendarAssociated__selected li {
             background: #f1f1f1;
         }
+
+        .recurrence-options {
+            display : none;
+        }
     </style>
 </head>
 
@@ -267,6 +271,12 @@
             </div>
         </div>
         <div class="calendar-container">
+            <div class="calendar-header">
+                <form method="post">
+                    <label>Add temporary calendar</label>
+                    <input type="text" name="calendar-tempory" placeholder="Url du calendrier temporaire">
+                </form>
+            </div>
             <div class="calendar-message" id="message"></div>
             <div id="calendar-nav">
                 <button onclick="changeView('dayGridMonth')">Month</button>
@@ -306,29 +316,102 @@
                 <div class="eventModel__frequency">
                     <fieldset for="frequency">
                         <legend>Frequency</legend>
-                        <div>
-                            <select id="frequency" name="frequency">
-                            <option value="daily">Quotidien</option>
-                            <option value="weekly">Hebdomadaire</option>
-                            <option value="monthly">Mensuel</option>
-                            <option value="bimestriel">Bimestriel</opton>
-                            <option value="semestriel">Semestriel</option>
-                            <option value="yearly">Annuel</option>
+                        <div id="recurrence-settings">
+                            <label for="recurrence-type">Récurrence:</label>
+                            <select id="recurrence-type" onchange="handleRecurrenceTypeChange()">
+                                <option value="none">Jamais</option>
+                                <option value="daily">Quotidienne</option>
+                                <option value="weekly">Hebdomadaire</option>
+                                <option value="workdays">Chaque jour ouvrable</option>
+                                <option value="bi-weekly">Toutes les deux semaines</option>
+                                <option value="monthly">Mensuelle</option>
+                                <option value="yearly">Annuelle</option>
+                                <option value="custom">Personnalisé</option>
                             </select>
-                        </div>
-                        <span>
-                            <input type="radio" name="each" value="openDay" /><label for="every">Chaque:</label>
-                            <input type="number" id="every" name="every" min="1" max="31"><label for="every">jour(s)</label>    
-                        </span>
-                        
-                        <span>
-                            <input type="radio" name="each" value="businessDay" /><label for="every">Chaque jour ouvrable</label>
-                        </span>
+                          
+                            <div id="end-date-container" style="display: none;">
+                                <label for="end-date">Jusqu'à:</label>
+                                <input type="date" id="end-date" onchange="handleEndDateChange()" />
+                            </div>
 
-                        <span>
-                            <label>Date de fin de récurrence : </label>
-                            <input type="date" name="endRecurrence" id="endRecurrence" />
-                        </span>
+                            <div id="daily-options" class="recurrence-options">
+                                Chaque <input type="number" id="daily-interval" value="1" min="1"/> jour(s)
+                                <input type="radio" id="everyday" name="daily"> Chaque jour
+                                <input type="radio" id="every-weekday" name="daily"> Chaque jour ouvrable
+                              </div>
+                          
+                              <div id="weekly-options" class="recurrence-options">
+                                Chaque <input type="number" id="weekly-interval" value="1" min="1"/> semaine(s)
+                                <div>
+                                  <input type="checkbox" id="monday" value="MO"> Lundi
+                                    <input type="checkbox" id="tuesday" value="TU"> Mardi
+                                    <input type="checkbox" id="wednesday" value="WE"> Mercredi
+                                    <input type="checkbox" id="thursday" value="TH"> Jeudi
+                                    <input type="checkbox" id="friday" value="FR"> Vendredi
+                                    <input type="checkbox" id="saturday" value="SA"> Samedi
+                                    <input type="checkbox" id="sunday" value="SU"> Dimanche
+                                </div>
+                              </div>
+                          
+                              <div id="monthly-options" class="recurrence-options">
+                                Chaque <input type="number" id="monthly-interval" value="1" min="1"/> mois
+                                <input type="radio" id="byweekday" name="monthly">
+                                <select id="weekday-in-month">
+                                    <option value="0">Chaque</option>
+                                    <option value="1">premier</option>
+                                    <option value="2">deuxième</option>
+                                    <option value="3">troisième</option>
+                                    <option value="4">quatrième</option>
+                                    <option value="-1">dernier</option>
+                                </select>
+                                <select id="weekday">
+                                  <option value="MO">Lundi</option>
+                                  <option value="TU">Mardi</option>
+                                    <option value="WE">Mercredi</option>
+                                    <option value="TH">Jeudi</option>
+                                    <option value="FR">Vendredi</option>
+                                    <option value="SA">Samedi</option>
+                                    <option value="SU">Dimanche</option>
+                                </select>
+                                <input type="radio" id="bymonthday" name="monthly"> Se répète le(s) jour(s) <input type="text" id="monthdays" />
+                              </div>
+                          
+                              <div id="yearly-options" class="recurrence-options">
+                                Chaque <input type="number" id="year-interval" value="1" min="1"/> année(s)
+                                <input type="radio" id="byyearweekday" name="yearly">
+                                <select id="weekday-in-year">
+                                    <option value="0">chaque</option>
+                                  <option value="1">premier</option>
+                                  <option vlaue="2">deuxième</option>
+                                    <option value="3">troisième</option>
+                                    <option value="4">quatrième</option>
+                                    <option value="-1">dernier</option>
+                                </select>
+                                <select id="weekday-year">
+                                  <option value="MO">Lundi</option>
+                                  <option value="TU">Mardi</option>
+                                    <option value="WE">Mercredi</option>
+                                    <option value="TH">Jeudi</option>
+                                    <option value="FR">Vendredi</option>
+                                    <option value="SA">Samedi</option>
+                                    <option value="SU">Dimanche</option>
+                                </select>
+                                de <select id="month-year">
+                                  <option value="1">Janvier</option>
+                                    <option value="2">Février</option>
+                                    <option value="3">Mars</option>
+                                    <option value="4">Avril</option>
+                                    <option value="5">Mai</option>
+                                    <option value="6">Juin</option>
+                                    <option value="7">Juillet</option>
+                                    <option value="8">Août</option>
+                                    <option value="9">Septembre</option>
+                                    <option value="10">Octobre</option>
+                                    <option value="11">Novembre</option>
+                                    <option value="12">Décembre</option>
+                                </select>
+                              </div>
+                        </div>
                     </fieldset>
                 </div>
                 <div>
@@ -416,6 +499,18 @@
 
     });
 
+    const handleRecurrenceTypeChange = () => {
+        const selectedType = document.getElementById('recurrence-type').value;
+        const options = document.querySelectorAll('.recurrence-options');
+
+        options.forEach(option => option.style.display = 'none');
+
+        const selectedOptions = document.getElementById(`${selectedType}-options`);
+        if (selectedOptions) {
+            selectedOptions.style.display = 'block';
+        }
+    }
+
     const loadUserCalendarList = () => {
 
         if (userAllCalendars.length <= 0) {
@@ -496,6 +591,9 @@
         const startDateInput = document.getElementById('startDate').value;
         const endDateInput = document.getElementById('endDate').value;
         const descriptionInput = document.getElementById('description').value;
+        const recurrenceType = document.getElementById('recurrence-type').value;
+
+
 
         if (new Date(startDateInput) >= new Date(endDateInput)) {
             console.log("La date de début doit être inférieure à la date de fin !");
@@ -863,7 +961,8 @@
                     start: event.start,
                     end: event.end,
                     calendarId: currentCalendar.id,
-                    description: event.description
+                    description: event.description,
+                    eventColor: currentCalendar?.color ? currentCalendar.color : '#378006',
                 }))
 
         });
