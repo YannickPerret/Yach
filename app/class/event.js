@@ -53,7 +53,7 @@ class Event {
   static async getById(id) {
     if (!id) return null;
 
-    const event = await Database.db.event.findUnique({
+    const event = await Database.getInstance().event.findUnique({
       where: {
         id: id
       }
@@ -71,7 +71,7 @@ class Event {
   async persist() {
     try {
 
-      const storedEvent = await Database.db.event.upsert({
+      const storedEvent = await Database.getInstance().event.upsert({
         where: {
           id: this.id
         },
@@ -98,7 +98,7 @@ class Event {
    * @returns {Promise<void>}
    */
   async remove() {
-    await Database.db.event.delete({
+    await Database.getInstance().event.delete({
       where: {
         id: this.id
       }
@@ -135,7 +135,7 @@ class Event {
    * @returns {Promise<void>}
    */
   async _associateWithCalendar(eventId) {
-    const associationExists = await Database.db.calendarEventAssociation.findUnique({
+    const associationExists = await Database.getInstance().calendarEventAssociation.findUnique({
       where: {
         eventId_calendarId: {
           eventId: eventId,
@@ -145,7 +145,7 @@ class Event {
     });
 
     if (!associationExists) {
-      await Database.db.calendarEventAssociation.create({
+      await Database.getInstance().calendarEventAssociation.create({
         data: {
           eventId: eventId,
           calendarId: this.calendarId

@@ -563,6 +563,24 @@ class Webserver {
             return reply.status(500).send({ error: 'An unexpected error occurred' });
         }
     }
+
+    async createUserCalendar(req, reply) {
+        try {
+            const userId = req.params.id;
+            
+
+            const user = await User.getByUsername(userId);
+            if (!user) {
+                return reply.status(404).send({ error: 'User not found' });
+            }
+
+            
+        }
+        catch(error) {
+            console.log(error);
+            return reply.status(500).send({ error: 'An unexpected error occurred' });
+        }
+    }
 }
 
 module.exports = Webserver;

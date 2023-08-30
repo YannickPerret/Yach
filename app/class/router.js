@@ -30,7 +30,7 @@ module.exports = (app, handlers, upload) => {
   app.get('/calendars', handlers.getWebCalendarById); // Visualisation du calendrier vide
   app.get('/logout', handlers.getLogout);
 
-
+  app.post('/users/:id/calendars', handlers.createUserCalendar); // créer un calendrier pour l'utilisateur
   app.get('/users/:id/calendars', handlers.getUserCalendars); // voir les calendriers de l'utilisateur
   app.get('/users/:id/calendars/:calendarId', handlers.getUserCalendarById); // voir un calendrier de l'utilisateur
   app.put('/users/:id/calendars/:calendarId', handlers.updateUserCalendar); // modifier un calendrier de l'utilisateur

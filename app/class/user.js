@@ -9,7 +9,7 @@ class User {
     }
 
     static async getById(id) {
-        const user = await Database.db.findUnique({
+        const user = await Database.getInstance().findUnique({
             where: {
                 id: id
             }
@@ -18,7 +18,7 @@ class User {
     }
 
     static async getBy(field, value) {
-        const user = await Database.db.user.findMany({
+        const user = await Database.getInstance().user.findMany({
             where: {
                 [field]: value
             }
@@ -27,7 +27,7 @@ class User {
     }
 
     static async getByUsername(username) {
-        const user = await Database.db.user.findFirst({
+        const user = await Database.getInstance().user.findFirst({
             where: {
                 username: username
             }
@@ -36,14 +36,14 @@ class User {
     }
 
     static async create(user) {
-        const newUser = await Database.db.user.create({
+        const newUser = await Database.getInstance().user.create({
             data: user
         })
         return new User(newUser);
     }
 
     static async update(id, user) {
-        const updatedUser = await Database.db.user.update({
+        const updatedUser = await Database.getInstance().user.update({
             where: {
                 id: id
             },
@@ -53,7 +53,7 @@ class User {
     }
 
     static async delete(id) {
-        const deletedUser = await Database.db.user.delete({
+        const deletedUser = await Database.getInstance().user.delete({
             where: {
                 id: id
             }
@@ -62,7 +62,7 @@ class User {
     }
 
     async persist() {
-        const user = await Database.db.user.upsert({
+        const user = await Database.getInstance().user.upsert({
             where: {
                 id: this.id
             },
@@ -89,7 +89,7 @@ class User {
 
     // user have access to this calendar
     async hasCalendar(calendarId) {
-        const calendar = await Database.db.calendar.findUnique({
+        const calendar = await Database.getInstance().calendar.findUnique({
             where: {
                 id: calendarId
             },
@@ -110,37 +110,45 @@ class User {
      * @returns <Promise>
      */
     async getCalendars() {
-        const userWithCalendars = await Database.db.user.findUnique({
-            where: {
-                id: this.id
-            },
-            include: {
-                CalendarUsersAssociations: {
-                    include: {
-                        calendar: true
+        let calendars = [];
+        try {
+            const userWithCalendars = await Database.getInstance().user.findUnique({
+                where: {
+                    id: this.id
+                },
+                include: {
+                    CalendarUsersAssociations: {
+                        include: {
+                            calendar: true
+                        }
                     }
                 }
-            }
-        })
-
-        if (!userWithCalendars) return [];
-
+            })
     
-        let calendars = [];
-        for (const association of userWithCalendars.CalendarUsersAssociations) {    
-            calendars.push(association.calendar)
+            if (!userWithCalendars) return [];
+    
+        
+            for (const association of userWithCalendars.CalendarUsersAssociations) {    
+                calendars.push(association.calendar)
+            }
         }
+        catch (error) {
+            console.log(error);
+            calendars = [];
+        }
+
         return calendars;
+        
     }
 
     async fetchCalendarWithEvents(calendar) {
-        const events = await Database.db.calendarEventAssociation.findMany({
+        const events = await Database.getInstance().calendarEventAssociation.findMany({
             where: { calendarId: calendar.id },
             include: { event: true }
         });
         calendar.events = events.map(assoc => assoc.event);
 
-        const subCalendars = await Database.db.calendarAssociation.findMany({
+        const subCalendars = await Database.getInstance().calendarAssociation.findMany({
             where: { parentCalendarId: calendar.id },
             include: { childCalendar: true }
         });
@@ -155,7 +163,7 @@ class User {
     }
 
     static async getAll() {
-        const users = await Database.db.user.findMany();
+        const users = await Database.getInstance().user.findMany();
         return users.map(user => new User(user));
     }
 }

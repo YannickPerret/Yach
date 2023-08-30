@@ -159,7 +159,7 @@ class Calendar {
      * @returns {Promise<void>}
      */
     async addChildCalendar(calendar) {
-        await Database.db.CalendarAssociation.create({
+        await Database.getInstance().CalendarAssociation.create({
             data: {
                 parentCalendarId: this.id,
                 childCalendarId: calendar.id
@@ -172,7 +172,7 @@ class Calendar {
      * @returns {Promise<Calendar[]>} - List of child calendars.
      */
     async getChildCalendars() {
-        const childCalendars = await Database.db.CalendarAssociation.findMany({
+        const childCalendars = await Database.getInstance().CalendarAssociation.findMany({
             where: {
                 parentCalendarId: this.id
             },
@@ -190,7 +190,7 @@ class Calendar {
      * @returns {Promise<void>}
      */
     async persist() {
-        await Database.db.calendar.upsert({
+        await Database.getInstance().calendar.upsert({
             where: {
                 id: this.id
             },
@@ -253,7 +253,7 @@ class Calendar {
      */
     async getEvents() {
         try {
-            const events = await Database.db.calendarEventAssociation.findMany({
+            const events = await Database.getInstance().calendarEventAssociation.findMany({
                 where: {
                     calendarId: this.id
                 },
@@ -276,7 +276,7 @@ class Calendar {
      */
     async updateEvents() {
         for (let event of this.events) {
-            await Database.db.event.delete({
+            await Database.getInstance().event.delete({
                 where: {
                     id: event.id
                 }
@@ -297,7 +297,7 @@ class Calendar {
      */
     static async getById(id) {
         try {
-            const calendarData = await Database.db.calendar.findUnique({
+            const calendarData = await Database.getInstance().calendar.findUnique({
                 where: { id },
                 include: {
                     calendarEventAssociations: {
@@ -331,7 +331,7 @@ class Calendar {
 
     static async getChildCalendarsWithEvents(parentCalendar, childAssociations) {
         for (const association of childAssociations) {
-            const childCalendarData = await Database.db.calendar.findUnique({
+            const childCalendarData = await Database.getInstance().calendar.findUnique({
                 where: { id: association.childCalendarId },
                 include: {
                     calendarEventAssociations: {
@@ -378,7 +378,7 @@ class Calendar {
                 filter[field] = String(value).toLocaleLowerCase();
             }
 
-            const calendarsData = await Database.db.calendar.findMany({
+            const calendarsData = await Database.getInstance().calendar.findMany({
                 where: filter
             });
 
@@ -390,7 +390,7 @@ class Calendar {
     }
 
     async addParentCalendar(parentCalendar) {
-        await Database.db.CalendarAssociation.upsert({
+        await Database.getInstance().CalendarAssociation.upsert({
             where: {
                 parentCalendarId_childCalendarId: {
                     parentCalendarId: parentCalendar.id,
@@ -406,7 +406,7 @@ class Calendar {
     }
 
     async removeParentCalendar(parentCalendar) {
-        await Database.db.CalendarAssociation.delete({
+        await Database.getInstance().CalendarAssociation.delete({
             where: {
                 parentCalendarId_childCalendarId: {
                     parentCalendarId: this.id,
@@ -418,7 +418,7 @@ class Calendar {
 
 
     async getParentCalendars() {
-        const parentCalendars = await Database.db.CalendarAssociation.findMany({
+        const parentCalendars = await Database.getInstance().CalendarAssociation.findMany({
             where: {
                 childCalendarId: this.id
             },
@@ -440,14 +440,14 @@ class Calendar {
         try {
             let calendarsData;
             if (filter != null) {
-                calendarsData = await Database.db.calendar.findMany({
+                calendarsData = await Database.getInstance().calendar.findMany({
                     where: {
                         ...filter
                     },
                 });
             }
             else {
-                calendarsData = await Database.db.calendar.findMany();
+                calendarsData = await Database.getInstance().calendar.findMany();
             }
 
             let calendars = calendarsData.map(calendarData => new Calendar(calendarData));
@@ -466,7 +466,7 @@ class Calendar {
      */
     static async removeById(id) {
         try {
-            await Database.db.calendar.delete({
+            await Database.getInstance().calendar.delete({
                 where: {
                     id
                 }
@@ -481,12 +481,12 @@ class Calendar {
         try {
             // Suppression des associations pour les calendriers partagés
             if (this.type === 'SHARED') {
-                await Database.db.calendarEventAssociation.deleteMany({
+                await Database.getInstance().calendarEventAssociation.deleteMany({
                     where: { calendarId: this.id }
                 });
             } else {
                 // Trouver les IDs des événements associés à ce calendrier
-                const eventIds = await Database.db.calendarEventAssociation.findMany({
+                const eventIds = await Database.getInstance().calendarEventAssociation.findMany({
                     where: { calendarId: this.id },
                     select: { eventId: true }
                 }).then(events => events.map(e => e.eventId));
@@ -494,28 +494,28 @@ class Calendar {
                 console.log("Events to delete:", eventIds);
 
                 // Supprimer les associations d'événement avant de supprimer les événements eux-mêmes
-                await Database.db.calendarEventAssociation.deleteMany({
+                await Database.getInstance().calendarEventAssociation.deleteMany({
                     where: { eventId: { in: eventIds } }
                 });
 
                 // Suppression des événements eux-mêmes
-                await Database.db.event.deleteMany({
+                await Database.getInstance().event.deleteMany({
                     where: { id: { in: eventIds } }
                 });
             }
 
             // Suppression des associations de calendrier
-            await Database.db.calendarAssociation.deleteMany({
+            await Database.getInstance().calendarAssociation.deleteMany({
                 where: { OR: [{ parentCalendarId: this.id }, { childCalendarId: this.id }] }
             });
 
             // Suppression des associations d'utilisateur de calendrier
-            await Database.db.calendarUserAssociation.deleteMany({
+            await Database.getInstance().calendarUserAssociation.deleteMany({
                 where: { calendarId: this.id }
             });
 
             // Suppression du calendrier lui-même
-            await Database.db.calendar.delete({
+            await Database.getInstance().calendar.delete({
                 where: { id: this.id }
             });
 
@@ -590,7 +590,7 @@ class Calendar {
      * @returns {Promise<void>}
      */
     async #associateEventWithCalendar(eventId) {
-        const associationExists = await Database.db.calendarEventAssociation.findUnique({
+        const associationExists = await Database.getInstance().calendarEventAssociation.findUnique({
             where: {
                 eventId_calendarId: {
                     eventId: eventId,
@@ -600,7 +600,7 @@ class Calendar {
         });
 
         if (!associationExists) {
-            await Database.db.calendarEventAssociation.create({
+            await Database.getInstance().calendarEventAssociation.create({
                 data: {
                     eventId: eventId,
                     calendarId: this.id
@@ -610,7 +610,7 @@ class Calendar {
     }
 
     async #associateUserWithCalendar(userId) {
-        const associationExists = await Database.db.CalendarUserAssociation.findUnique({
+        const associationExists = await Database.getInstance().CalendarUserAssociation.findUnique({
             where: {
                 userId_calendarId: {
                     userId: userId,
@@ -620,7 +620,7 @@ class Calendar {
         });
 
         if (!associationExists) {
-            await Database.db.CalendarUserAssociation.create({
+            await Database.getInstance().CalendarUserAssociation.create({
                 data: {
                     userId: userId,
                     calendarId: this.id
