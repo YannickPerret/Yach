@@ -7,21 +7,19 @@ const { PrismaClient } = require('@prisma/client')
  */
 class Database {
     /**
-     * @type {PrismaClient}
-     */
-    db;
-
-    /**
      * Singleton instance of the Database.
      * @type {Database}
      */
     static instance;
 
     constructor() {
+    }
+
+    static getInstance() {
         if (!Database.instance) {
-            this.db = new PrismaClient({ log: ['error'] });
-            Database.instance = this;
+            Database.instance = new PrismaClient({ log: ['error'] });
         }
+
         return Database.instance;
     }
 }
@@ -30,7 +28,5 @@ class Database {
  * Singleton instance of the Database.
  * @type {Database}
  */
-const instance = new Database();
-Object.freeze(instance);
 
-module.exports = instance;
+module.exports = Database;
