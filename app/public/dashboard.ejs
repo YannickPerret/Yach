@@ -13,6 +13,9 @@
   <input type="text" name="username" id="username" hidden /> <br>
 
   <h2>Create a new Calendar</h2>
+  <button type="button" onclick="console.log('kk')">Create empty calendar</button> || 
+  <button type="button" onclick="console.log('jj')">Create shared calendar</button><br><br>
+
   <label>Upload calendar : </label><input type="file" name="file" id="file" /><br>  
   <label for="pathUrl">Or by URL</label>
   <input type="text" name="calendarUrl" id="pathUrl" placeholder="https://exemple.com/calendar.ics" /><br>
@@ -21,6 +24,11 @@
     <option value="PERSONAL">Personal</option>
     <option value="PROFESSIONAL">Professional</option>
     <option value="OTHER">Other</option>
+  </select><br>
+  <label>Calendar Privacy : </label>
+  <select name="class_visiblity">
+    <option value="PUBLIC">Public</option>
+    <option value="PRIVATE">Private</option>
   </select><br>
   <label>Calendar name : </label><input type="text" name="name" id="name" /><br>
 

@@ -235,9 +235,10 @@ class Webserver {
     }
 
     submitCalendar = async (req, reply) => {
-        const { file: data, body: { calendars: inputCalendarsSelected, calendarUrl: inputCalendarUrl, type: typeCalendarInput, name: nameCalendarInput, username } } = req;
+        const { file: data, body: { calendars: inputCalendarsSelected, calendarUrl: inputCalendarUrl, type: typeCalendarInput, name: nameCalendarInput, class: class_visiblity, username } } = req;
 
         const typeCalendar = ["PROFESSIONAL", "PERSONAL", "OTHER"].includes(typeCalendarInput) ? typeCalendarInput : "OTHER";
+        const classVisibility = ["PUBLIC", "PRIVATE"].includes(class_visiblity) ? class_visiblity : "PUBLIC";
         const nameCalendar = nameCalendarInput || "Yoda Default";
         let outputCalendar;
 
@@ -252,19 +253,18 @@ class Webserver {
 
         const selectedCalendars = inputCalendarsSelected && Array.isArray(inputCalendarsSelected) ? inputCalendarsSelected : [];
 
-
         if (data) {
-            outputCalendar = await this.handleFileUpload(data, typeCalendar, nameCalendar, user);
+            outputCalendar = await this.handleFileUpload(data, typeCalendar, nameCalendar, classVisibility, user);
             selectedCalendars.push(outputCalendar.id);
         }
 
         if (inputCalendarUrl) {
-            outputCalendar = await this.handleUrlCalendar(inputCalendarUrl, typeCalendar, nameCalendar, user);
+            outputCalendar = await this.handleUrlCalendar(inputCalendarUrl, typeCalendar, nameCalendar, classVisibility, user);
             selectedCalendars.push(outputCalendar.id);
         }
 
         if (selectedCalendars.length > 1) {
-            outputCalendar = await this.handleMultipleCalendars(selectedCalendars, nameCalendar, user);
+            outputCalendar = await this.handleMultipleCalendars(selectedCalendars, nameCalendar, classVisibility, user);
         } else if (!data && !inputCalendarUrl) {
             return reply.status(400).send({ error: 'More than one calendar must be selected' });
         }
@@ -273,7 +273,7 @@ class Webserver {
     }
 
     // à déplacer dans la class Calendar
-    async handleFileUpload(data, typeCalendar, nameCalendar, user) {
+    async handleFileUpload(data, typeCalendar, nameCalendar, classVisibility, user) {
         console.log("File upload request received");
         const filePath = data.path;
 
@@ -281,7 +281,7 @@ class Webserver {
             source: filePath,
             type: typeCalendar,
             name: nameCalendar,
-            class: "PUBLIC",
+            class: classVisibility,
             right: "WRITE",
             users: [user]
         });
@@ -313,13 +313,13 @@ class Webserver {
         return uploadCalendar;
     }
 
-    async handleUrlCalendar(inputCalendarUrl, typeCalendar, nameCalendar, user) {
+    async handleUrlCalendar(inputCalendarUrl, typeCalendar, nameCalendar, classVisibility, user) {
         const urlCalendar = new Calendar({
             source: inputCalendarUrl,
             type: typeCalendar,
             name: nameCalendar,
             url: inputCalendarUrl,
-            class: "PUBLIC",
+            class: classVisibility,
             right: "READ",
             users: [user]
         });
@@ -337,13 +337,13 @@ class Webserver {
         return urlCalendar;
     }
 
-    async handleMultipleCalendars(selectedCalendars, nameCalendar, user) {
+    async handleMultipleCalendars(selectedCalendars, nameCalendar, classVisibility, user) {
         let updateParentCalendar = false;
 
         const ParentCalendar = new Calendar({
             name: nameCalendar,
             type: "SHARED",
-            class: "PUBLIC",
+            class: classVisibility,
             users: [user]
         });
 
