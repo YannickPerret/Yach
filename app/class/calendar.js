@@ -288,6 +288,37 @@ class Calendar {
         console.log("Events updated for calendar with id:", this.id);
     }
 
+    mergeEventsCalendar = async (eventsToMerge) => {
+        const events = await this.getEvents();
+        const eventsToUpsert = [];
+        const eventsToDelete = events.slice();
+
+        for (const newEvent of eventsToMerge) {
+            const matchingEvent = events.find(event => event.id === newEvent.id);
+            if (!matchingEvent || JSON.stringify(newEvent) !== JSON.stringify(matchingEvent)) {
+                eventsToUpsert.push(newEvent);
+            }
+
+            /*if (matchingEvent) {
+                const index = eventsToDelete.indexOf(matchingEvent);
+                if (index > -1) {
+                    eventsToDelete.splice(index, 1);
+                }
+            }*/
+        }
+
+        for (const event of eventsToUpsert) {
+            event.calendarId = this.id;
+            await event.persist();
+            await this.#associateEventWithCalendar(event.id);
+        }
+
+        /*for (const event of eventsToDelete) {
+            await event.remove();
+        }*/
+
+        console.log("Events merged for calendar with id:", this.id);
+    }
     /**
      * Get a calendar instance by its ID.
      * @param {string} id - Unique identifier of the calendar.
@@ -315,8 +346,6 @@ class Calendar {
             const events = calendarEventAssociations.map(association => new Event(association.event));
 
             const calendar = new Calendar({ ...ParentCalendarData, events });
-
-            console.log("Calendar:", calendar);
 
             await this.getChildCalendarsWithEvents(calendar, childCalendars);
 

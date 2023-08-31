@@ -436,7 +436,7 @@
     </div>
 
     <div class="modal" id="settingsModal">
-        <div class="modal-content">
+        <div class="modal-content" id="settingsModalContent">
             <span class="close-btn" onclick="closeModalSettings()">&times;</span>
 
             <form method="POST" enctype="application/x-www-form-urlencoded" id="calendarSettings">
@@ -532,11 +532,9 @@
         user = <%- JSON.stringify(user) %>;
         userAllCalendars = <%- JSON.stringify(calendars) %>;
 
-        // ajouter une function pour le calendrier par défaut
         currentCalendar = userAllCalendars[currentIndexCalendar];
         events = getAllEventsFromCalendars(currentCalendar)
 
-        console.log(currentCalendar)
         loadUserCalendarList();
         selectUserCalendarInList();
 
@@ -807,7 +805,41 @@
         const formSettings = document.getElementById('calendarSettings');
         const calendarAssociated = document.getElementById('calendarAssociated');
         const calendarAssociated_addNew = document.getElementById('calendarAssociated__addNew');
+        const modalSettingsContent = document.getElementById('settingsModalContent');
 
+        if (calendar.type !== 'SHARED') {
+            const formImportEvent = document.createElement('form');
+            const inputImportEvent = document.createElement('input');
+            inputImportEvent.type = 'file';
+            inputImportEvent.id = 'updateFileEvent';
+            inputImportEvent.name = 'updateFileEvent';
+            inputImportEvent.accept = '.ics';
+
+            inputImportEvent.addEventListener('change', async (e) => {
+                if (confirm('Do you really want to import this file ?')) {
+                    const file = e.target.files[0];
+                    const formData = new FormData();
+                    formData.append('file', file);
+
+                    const response = await fetch(`/users/${user.id}/calendars/${calendar.id}/import`, {
+                        method: 'POST',
+                        body: formData
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            showErrorMessage(data.message, 'success');
+                            closeModalSettings();
+                        })
+                        .catch(error => {
+                            console.error(error);
+                            showErrorMessage(error)
+                        });
+                }
+            });
+
+            modalSettingsContent.insertBefore(formImportEvent, formSettings);
+            formImportEvent.appendChild(inputImportEvent);
+        }
         let allCalendars = await getAllCalendars();
 
         let calendarChildren = calendar.children.map(children => children.id)
@@ -840,7 +872,6 @@
                         calendarChildren.splice(calendarChildren.indexOf(children.id), 1);
                         li.remove();
 
-                        // Remettre le calendrier dans calendarAssociated_addNew
                         let liToAdd = document.createElement('li');
                         liToAdd.appendChild(document.createTextNode(children.name));
                         let ajouterBtn = document.createElement('button');
@@ -884,7 +915,6 @@
                                 supprimerBtn.onclick = () => {
                                     calendarChildren.splice(calendarChildren.indexOf(calendar.id), 1);
                                     liSub.remove();
-                                    // Remettre le calendrier dans calendarAssociated_addNew
                                     calendarAssociated_addNew.appendChild(li);
                                 };
                                 liSub.appendChild(supprimerBtn);

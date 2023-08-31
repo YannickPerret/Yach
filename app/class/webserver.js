@@ -16,9 +16,6 @@ const Ical = require('./adapter/ical');
 const fastifyMulter = require('fastify-multer');
 const Task = require('./task');
 
-//const cert = fs.readFileSync(path.join(__dirname, '../certs/cert.pem'));
-//const key = fs.readFileSync(path.join(__dirname, '../certs/key.pem'));
-
 // Configure multer storage
 
 const storage = fastifyMulter.diskStorage({
@@ -601,6 +598,44 @@ class Webserver {
             console.log(error);
             return reply.status(500).send({ error: 'An unexpected error occurred' });
         }
+    }
+
+    async importUserCalendar(req, reply) {
+        console.log("Import calendar request received")
+
+        const { file: data, params: { id, calendarId } } = req;
+
+        const calendar = await Calendar.getById(calendarId);
+        if (!calendar) {
+            console.error("Calendar not found");
+            return reply.status(404).send({ error: 'Calendar not found' });
+        }
+
+        const user = await User.getBy('id', id);
+        if (!user || !user.hasCalendar(calendarId)) {
+            console.error("User not found or not authorized");
+            return reply.status(404).send({ error: user ? 'You don\'t have the right to update this calendar' : 'User not found' });
+        }
+
+        const filePath = data.path;
+
+        //parser le fichier et générer les events
+        const uploadCalendar = new Calendar({
+            source: filePath
+        });
+
+        await uploadCalendar.parseEvents();
+        await calendar[0].mergeEventsCalendar(uploadCalendar.events);
+        
+
+        fs.unlink(filePath, (err) => {
+            if (err) {
+                console.error(err);
+            }
+        });
+
+        console.log("File uploaded successfully")
+        reply.status(200).send({ message: 'Calendar imported successfully' });
     }
 }
 
