@@ -29,6 +29,8 @@
         .selected {
             font-weight: bold;
             background-color: #eee;
+            border-radius: 10px;
+            padding : 5px;
         }
 
         .sidebar-header {
@@ -272,9 +274,10 @@
         </div>
         <div class="calendar-container">
             <div class="calendar-header">
-                <form method="post">
+                <form method="post" id="form-calendar-temporary">
                     <label>Add temporary calendar</label>
-                    <input type="text" name="calendar-tempory" placeholder="Url du calendrier temporaire">
+                    <input type="text" id="calendar-temporary" name="calendar-temporary" placeholder="Url of temporary calendar">
+                    <input type="submit" value="Add">
                 </form>
             </div>
             <div class="calendar-message" id="message"></div>
@@ -479,11 +482,47 @@
     let fullCalendar;
     let userCalendar
     let currentCalendar
+    let currentIndexCalendar = 0;
+    let temporaryCalendar = [];
     let user;
     let events
     let divError
     const DOUBLE_CLICK_DELAY = 300;
     let clickTimer = null;
+    
+    document.getElementById('form-calendar-temporary').addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const formCalendarTemporary = document.getElementById('form-calendar-temporary');
+        const inputCalendarTemporary = document.getElementById('calendar-temporary');
+
+        const response = await fetch(`/api/v1/calendar/temporary`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ url: inputCalendarTemporary.value })
+        })
+        .then(response => response.json())
+        .then(data => {
+            temporaryCalendar.push(data);
+            temporaryCalendar[0].events.map(event => {
+                console.log(event)
+                fullCalendar.addEvent({
+                title: event.summary,
+                start: event.start,
+                end: event.end,
+                description: event.description,
+                backgroundColor: '#378006',
+                borderColor: '#378006',
+                editable: false})
+            });
+        })
+        .catch(error => {
+            console.error(error);
+            showErrorMessage(error)
+        });
+        formCalendarTemporary.reset();
+    })
 
     document.addEventListener('DOMContentLoaded', () => {
         if (localStorage.getItem('token') === null) {
@@ -494,10 +533,12 @@
         userAllCalendars = <%- JSON.stringify(calendars) %>;
 
         // ajouter une function pour le calendrier par défaut
-        currentCalendar = userAllCalendars[0];
+        currentCalendar = userAllCalendars[currentIndexCalendar];
         events = getAllEventsFromCalendars(currentCalendar)
 
+        console.log(currentCalendar)
         loadUserCalendarList();
+        selectUserCalendarInList();
 
         fullCalendar = initializeCalendar(events, userAllCalendars.id);
         divError = document.getElementById('message');
@@ -529,6 +570,14 @@
         userAllCalendars.forEach(calendar => {
             const li = document.createElement('li');
             const a = document.createElement('a');
+            const img = document.createElement('img');
+            if (calendar.right === 'READ'){
+                img.src = '/images/cadenas.png';
+                img.style.width = '20px';
+                img.style.height = '20px';
+                a.appendChild(img);
+            }
+
             a.href = `/users/${user.username}/calendar/${calendar.id}`;
             li.textContent = calendar.name;
             const btn = document.createElement('button');
@@ -544,12 +593,11 @@
             }
 
             li.addEventListener('click', (element) => {
-                document.querySelectorAll('.selected').forEach(element => element.classList.remove('selected'))
-                li.classList.add('selected');
-
                 currentCalendar = calendar;
-                events = getAllEventsFromCalendars(currentCalendar)
+                currentIndexCalendar = userAllCalendars.indexOf(calendar);
+                selectUserCalendarInList();
 
+                events = getAllEventsFromCalendars(currentCalendar)
                 fullCalendar = initializeCalendar(events, userAllCalendars.id);
             });
 
@@ -567,6 +615,18 @@
             li.appendChild(a);
             document.getElementById('userAllCalendars').appendChild(li);
         });
+    }
+
+    const selectUserCalendarInList = () => {
+        document.querySelectorAll('.selected').forEach(element => {
+            element.style.backgroundColor = 'initial';
+            element.style.color = 'initial';
+            element.classList.remove('selected')
+        })
+        document.getElementById('userAllCalendars').children[currentIndexCalendar].classList.add('selected');
+        if (currentCalendar.color === '#000000')
+            document.getElementById('userAllCalendars').children[currentIndexCalendar].style.color = '#ffffff';
+        document.getElementById('userAllCalendars').children[currentIndexCalendar].style.backgroundColor = currentCalendar.color;
     }
 
     const getAllEventsFromCalendars = (calendar) => {
@@ -588,10 +648,6 @@
 
     return allEvents;
 };
-
-
-
-
 
     document.getElementById('eventForm').addEventListener('submit', async (data) => {
         data.preventDefault();
@@ -675,7 +731,6 @@
         });
     }
 }
-
 
     const changeView = (viewName) => {
         fullCalendar.changeView(viewName);
@@ -958,7 +1013,6 @@
             selectable: true,
             //timeZone: 'Europe/Zurich',
             firstDay: 1,
-            //eventColor: currentCalendar?.color ? currentCalendar.color : '#378006',
             eventClick: info => openModal(info.event),
             eventDrop: info => {
                 if (currentCalendar.rights !== 'Write') {
