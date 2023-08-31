@@ -117,7 +117,7 @@ class User {
                     id: this.id
                 },
                 include: {
-                    CalendarUsersAssociations: {
+                    calendarUsersAssociations: {
                         include: {
                             calendar: true
                         }
@@ -127,8 +127,7 @@ class User {
     
             if (!userWithCalendars) return [];
     
-        
-            for (const association of userWithCalendars.CalendarUsersAssociations) {    
+            for (const association of userWithCalendars.calendarUsersAssociations) {    
                 calendars.push(association.calendar)
             }
         }
