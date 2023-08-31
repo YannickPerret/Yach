@@ -55,9 +55,7 @@ class Calendar {
     parseEvents = async () => {
         try {
             if (this.source == null) throw new Error('No source file specified')
-
             this.events = await this.source.parseData();
-
         } catch (error) {
             console.error(error);
             this.events = [];
@@ -313,13 +311,16 @@ class Calendar {
                 return [];
             }
 
-            const { calendarEventAssociations, childCalendars, ...otherCalendarData } = calendarData;
+            const { calendarEventAssociations, childCalendars, ...ParentCalendarData } = calendarData;
             const events = calendarEventAssociations.map(association => new Event(association.event));
-            const calendar = new Calendar({ ...otherCalendarData, events });
+
+            const calendar = new Calendar({ ...ParentCalendarData, events });
+
+            console.log("Calendar:", calendar);
 
             await this.getChildCalendarsWithEvents(calendar, childCalendars);
 
-            calendar.filterDuplicateEvents(calendar);
+            //calendar.filterDuplicateEvents(calendar);
 
             return [calendar];
         } catch (error) {

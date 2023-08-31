@@ -129,6 +129,28 @@ class Webserver {
         res.status(207).send();  // 207 Multi-Status is commonly used for PROPFIND responses
     }
 
+    getTemporaryCalendar = async (req, reply) => {
+        console.log("Temporary calendar request received");
+
+        const urlCalendarTemporary = req.body.url;
+
+        if (!urlCalendarTemporary) {
+            return reply.status(400).send({ error: 'No url provided' });
+        }
+
+        let TemporaryCalendar = new Calendar({
+            source: urlCalendarTemporary,
+            type: "OTHER",
+            name: "Yoda Temporary Default",
+            class: "PUBLIC",
+            right: "WRITE"
+        });
+
+        await TemporaryCalendar.parseEvents();
+
+        reply.status(200).send(TemporaryCalendar);
+    }
+
     /** UPDATE EVENT IN CALENDAR  **/
     updateEventCalendar = async (req, reply) => {
 
@@ -182,7 +204,6 @@ class Webserver {
 
 
             if (eventToPersist) {
-                console.log(eventData)
                 eventToPersist.summary = eventData.summary;
                 eventToPersist.start = new Date(eventData.startDate).toISOString();
                 eventToPersist.end = new Date(eventData.endDate).toISOString();

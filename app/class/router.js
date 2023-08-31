@@ -1,28 +1,30 @@
 module.exports = (app, handlers, upload) => {
   app.register((instance, opts, next) => {
-      instance.get('/calendars', handlers.getAllCalendars);
+      instance.get('calendars', handlers.getAllCalendars);
 
-      instance.get('/calendar/:id', handlers.getCalendarById);
+      instance.get('calendar/:id', handlers.getCalendarById);
 
-      instance.put('/calendar/:id', handlers.updateEventCalendar);
-      instance.post('/calendar', { preHandler: upload.single('file') }, handlers.submitCalendar);
+      instance.put('calendar/:id', handlers.updateEventCalendar);
+      instance.post('calendar', { preHandler: upload.single('file') }, handlers.submitCalendar);
 
-      instance.delete('/calendar/:id', handlers.removeCalendar)
+      instance.delete('calendar/:id', handlers.removeCalendar)
+
+      instance.post('calendar/temporary', handlers.getTemporaryCalendar);
 
       //route fastify with PROPFIND method
       instance.route({
           method: 'PROPFIND',
-          url: '/calendar/:id',
+          url: 'calendar/:id',
           handler: handlers.propfindCalendar  
       });
 
-      instance.post('/login', handlers.login);
+      instance.post('login', handlers.login);
 
-      instance.post('/logout', handlers.logout);
+      instance.post('logout', handlers.logout);
 
 
       next();
-  }, { prefix: '/api/v1' });
+  }, { prefix: '/api/v1/' });
 
   app.get('/', handlers.getLogin); //login
   app.get('/dashboard', handlers.getDashboard); // Création d'un calendrier
