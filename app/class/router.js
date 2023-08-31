@@ -27,7 +27,7 @@ module.exports = (app, handlers, upload) => {
   }, { prefix: '/api/v1/' });
 
   app.get('/', handlers.getLogin); //login
-  app.get('/dashboard', handlers.getDashboard); // Création d'un calendrier
+  app.get('/users/:id/dashboard', handlers.getDashboard); // Création d'un calendrier
   app.get('/calendars/:id', handlers.getWebCalendarById); // visualisation du calendrier if public
   app.get('/calendars', handlers.getWebCalendarById); // Visualisation du calendrier vide
   app.get('/logout', handlers.getLogout);

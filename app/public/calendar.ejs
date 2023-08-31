@@ -265,7 +265,7 @@
                 <button id="toggleSidebar">☰</button>
             </div>
             <div class="sidebar-content">
-                <a href="/"><button id="createCalendarBtn">Create new calendar</button></a>
+                <a href="/" id="dashboard_link"><button id="createCalendarBtn">Create new calendar</button></a>
                 <div id="miniCalendar"></div>
                 <h3>My Calendars</h3>
                 <ul id="userAllCalendars" class="sidebar-userAllCalendars">
@@ -540,6 +540,7 @@
 
         fullCalendar = initializeCalendar(events, userAllCalendars.id);
         divError = document.getElementById('message');
+        document.getElementById('dashboard_link').href = `/users/${user.username}/dashboard`;
         document.getElementById('createCalendarBtn').addEventListener('click', () => { });
         document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
 

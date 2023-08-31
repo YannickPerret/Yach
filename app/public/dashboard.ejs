@@ -9,6 +9,10 @@
 <body>
 
   <div id="error"></div>
+
+  <button type="button" onclick="window.location.href = '/logout'">Logout</button><br>
+  <button type="button" onclick="window.location.href = '/users/username/calendars'" id="showMyCalendar">See my calendars</button><br>
+
 <form method="post" enctype="multipart/form-data">
   <input type="text" name="username" id="username" hidden /> <br>
 
@@ -84,6 +88,10 @@
     if (!localStorage.getItem('token') || !localStorage.getItem('username'))  {
       window.location.href = '/';
     }
+
+    document.getElementById('showMyCalendar').addEventListener('click', () => {
+      window.location.href = '/users/' + localStorage.getItem('username') + '/calendars';
+    });
 
     username = localStorage.getItem('username');
 
