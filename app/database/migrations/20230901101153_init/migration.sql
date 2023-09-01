@@ -2,7 +2,8 @@
 CREATE TABLE "Calendar" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "name" TEXT,
-    "type" TEXT NOT NULL DEFAULT 'OTHER',
+    "type" TEXT NOT NULL DEFAULT 'BASIC',
+    "classification" TEXT NOT NULL DEFAULT 'OTHER',
     "url" TEXT,
     "color" TEXT DEFAULT '#000000',
     "class" TEXT NOT NULL DEFAULT 'PUBLIC',

@@ -11,12 +11,13 @@ generator client {
 model Calendar {
   id              String                       @id @default(uuid())
   name            String?
-  type            String                       @default("OTHER")
+  type            String                       @default("BASIC")
+  classification  String                       @default("OTHER")
   url             String?
   color           String?                      @default("#000000")
-  class           String                      @default("PUBLIC")
-  right           String                      @default("WRITE") 
-  syncExpressionCron String?                    @default("0 0 * * *")
+  class           String                       @default("PUBLIC")
+  right           String                       @default("WRITE") 
+  syncExpressionCron String?                   @default("0 0 * * *")
   createdAt       DateTime                     @default(now())
   updatedAt       DateTime                     @updatedAt
   calendarEventAssociations CalendarEventAssociation[]
