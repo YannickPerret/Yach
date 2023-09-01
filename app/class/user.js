@@ -84,6 +84,7 @@ class User {
         for (let calendar of calendars) {
             calendar = await this.fetchCalendarWithEvents(calendar);
         }
+
         return calendars;
     }
 

@@ -14,6 +14,7 @@ const User = require('./user');
  * @property {string} id
  * @property {string?} [name]
  * @property {string} type
+ * @property {string} classification
  * @property {string?} [url]
  * @property {string} [class]
  * @property {string?} [color]
@@ -38,6 +39,7 @@ class Calendar {
         this.events = config.events || [];
         this.name = config.name;
         this.type = config.type;
+        this.classification = config.classification;
         this.url = config.url;
         this.class = config.class;
         this.color = config.color;
@@ -195,6 +197,7 @@ class Calendar {
             update: {
                 name: this.name,
                 type: this.type,
+                classification: this.classification,
                 url: this.url,
                 right: this.right,
                 color: this.color,
@@ -205,6 +208,7 @@ class Calendar {
                 id: this.id,
                 name: this.name,
                 type: this.type,
+                classification: this.classification,
                 url: this.url,
                 right: this.right,
                 syncExpressionCron: this.syncExpressionCron,
@@ -298,7 +302,6 @@ class Calendar {
             if (!matchingEvent || JSON.stringify(newEvent) !== JSON.stringify(matchingEvent)) {
                 eventsToUpsert.push(newEvent);
             }
-
             /*if (matchingEvent) {
                 const index = eventsToDelete.indexOf(matchingEvent);
                 if (index > -1) {
@@ -558,8 +561,6 @@ class Calendar {
             console.debug(e);
         }
     }
-
-
 
     // add to task scheduler to sync
     addToTaskScheduler() {

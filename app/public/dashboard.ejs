@@ -17,14 +17,12 @@
   <input type="text" name="username" id="username" hidden /> <br>
 
   <h2>Create a new Calendar</h2>
-  <button type="button" onclick="console.log('kk')">Create empty calendar</button> || 
-  <button type="button" onclick="console.log('jj')">Create shared calendar</button><br><br>
 
   <label>Upload calendar : </label><input type="file" name="file" id="file" /><br>  
   <label for="pathUrl">Or by URL</label>
   <input type="text" name="calendarUrl" id="pathUrl" placeholder="https://exemple.com/calendar.ics" /><br>
-  <label>Calendar type : </label>
-  <select name="type">
+  <label>Calendar classification : </label>
+  <select name="classification">
     <option value="PERSONAL">Personal</option>
     <option value="PROFESSIONAL">Professional</option>
     <option value="OTHER">Other</option>
@@ -34,7 +32,8 @@
     <option value="PUBLIC">Public</option>
     <option value="PRIVATE">Private</option>
   </select><br>
-  <label>Calendar name : </label><input type="text" name="name" id="name" /><br>
+  <label>Calendar name : </label><input type="text" name="name" id="name" /><br><br>
+  <button type="button" onclick="() => console.log('fff')">Create empty calendar</button> <br>
 
   <h2>Select your calendars :</h2>
   <% if (calendars.length === 0) { %>
@@ -42,7 +41,7 @@
   <% } else { %>
     <h3>Epistec team</h3>
     <% calendars.forEach(function(calendar) { %>
-        <% if (calendar.type == 'PERSONAL' && calendar.class == 'PUBLIC') { %>
+        <% if (calendar.classification == 'PERSONAL') { %>
           <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
           <label for="<%= calendar.id %>"><a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a>
           </label><br>
@@ -51,7 +50,7 @@
 
     <h3>Epsitec calendar</h3>
     <% calendars.forEach(function(calendar) { %>
-        <% if (calendar.type == 'PROFESSIONAL' && calendar.class == 'PUBLIC') { %>
+        <% if (calendar.classification == 'PROFESSIONAL') { %>
           <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
           <label for="<%= calendar.id %>"><a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a>
           </label><br>
@@ -61,7 +60,7 @@
 
   <h3>Others calendar</h3>
     <% calendars.forEach(function(calendar) { %>
-        <% if (calendar.type == 'OTHER' && calendar.class == 'PUBLIC') { %>
+        <% if (calendar.classification == 'OTHER') { %>
           <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
           <label for="<%= calendar.id %>"><a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a>
           </label><br>
@@ -71,7 +70,7 @@
 
   <h3>Shared Calendars (Only check here)</h3>
   <% calendars.forEach(function(calendar) { %>
-    <% if (calendar.type == 'SHARED' && calendar.class == 'PUBLIC') { %>
+    <% if (calendar.type == 'SHARED') { %>
       <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
       <label for="<%= calendar.id %>"><a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a>
       </label><br>

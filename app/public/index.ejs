@@ -230,7 +230,7 @@
 <script defer>
   document.addEventListener("DOMContentLoaded", () => {
     if (localStorage.getItem('token') && localStorage.getItem('username')) {
-      window.location.href = '/dashboard';
+      window.location.href = `/users/${localStorage.getItem('username')}/dashboard`;
     }
   })
 

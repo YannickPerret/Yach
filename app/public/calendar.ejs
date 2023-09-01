@@ -30,7 +30,7 @@
             font-weight: bold;
             background-color: #eee;
             border-radius: 10px;
-            padding : 5px;
+            padding: 5px;
         }
 
         .sidebar-header {
@@ -193,13 +193,13 @@
             width: 100%;
         }
 
-        .eventModel__frequency{
+        .eventModel__frequency {
             display: flex;
             flex-direction: column;
         }
 
-        .eventModel__frequency span{
-            display :flex;
+        .eventModel__frequency span {
+            display: flex;
             flex-direction: row;
         }
 
@@ -253,8 +253,48 @@
         }
 
         .recurrence-options {
-            display : none;
+            display: none;
         }
+
+        .hidden {
+            display: none;
+        }
+
+        #dropdownMenu {
+            position: absolute;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+
+        /* Tooltip container */
+.tooltip {
+  position: relative;
+  display: inline-block;
+  border-bottom: 1px dotted black; /* If you want dots under the hoverable text */
+}
+
+/* Tooltip text */
+.tooltip .tooltiptext {
+  visibility: hidden;
+  width: 120px;
+  background-color: black;
+  color: #fff;
+  text-align: center;
+  padding: 5px 0;
+  border-radius: 6px;
+ 
+  /* Position the tooltip text - see examples below! */
+  position: absolute;
+  z-index: 1;
+}
+
+/* Show the tooltip text when you mouse over the tooltip container */
+.tooltip:hover .tooltiptext {
+  visibility: visible;
+}
     </style>
 </head>
 
@@ -265,7 +305,7 @@
                 <button id="toggleSidebar">☰</button>
             </div>
             <div class="sidebar-content">
-                <a href="/" id="dashboard_link"><button id="createCalendarBtn">Create new calendar</button></a>
+                <button id="createCalendarBtn">Create new calendar</button>
                 <div id="miniCalendar"></div>
                 <h3>My Calendars</h3>
                 <ul id="userAllCalendars" class="sidebar-userAllCalendars">
@@ -276,7 +316,8 @@
             <div class="calendar-header">
                 <form method="post" id="form-calendar-temporary">
                     <label>Add temporary calendar</label>
-                    <input type="text" id="calendar-temporary" name="calendar-temporary" placeholder="Url of temporary calendar">
+                    <input type="text" id="calendar-temporary" name="calendar-temporary"
+                        placeholder="Url of temporary calendar">
                     <input type="submit" value="Add">
                 </form>
             </div>
@@ -288,6 +329,12 @@
             </div>
 
             <div id='calendar'></div>
+
+            <div>
+                <div id="exportCalendar" class="tooltip"><span id="exportCalendarText">copy export calendar</span>
+                    <span class="tooltiptext">Click to copy export link</span>
+                  </div>
+            </div>
         </div>
     </div>
 
@@ -299,7 +346,7 @@
             <form id="eventForm" class="eventFormModal">
                 <div>
                     <input type="hidden" id="calendarId" name="calendarId" disabled>
-                    <input type="hidden" id="eventId" name="eventId" disabled >
+                    <input type="hidden" id="eventId" name="eventId" disabled>
                 </div>
                 <div>
                     <label for="summary">Summary:</label>
@@ -331,22 +378,22 @@
                                 <option value="yearly">Annuelle</option>
                                 <option value="custom">Personnalisé</option>
                             </select>
-                          
+
                             <div id="end-date-container" style="display: none;">
                                 <label for="end-date">Jusqu'à:</label>
                                 <input type="date" id="end-date" onchange="handleEndDateChange()" />
                             </div>
 
                             <div id="daily-options" class="recurrence-options">
-                                Chaque <input type="number" id="daily-interval" value="1" min="1"/> jour(s)
+                                Chaque <input type="number" id="daily-interval" value="1" min="1" /> jour(s)
                                 <input type="radio" id="everyday" name="daily"> Chaque jour
                                 <input type="radio" id="every-weekday" name="daily"> Chaque jour ouvrable
-                              </div>
-                          
-                              <div id="weekly-options" class="recurrence-options">
-                                Chaque <input type="number" id="weekly-interval" value="1" min="1"/> semaine(s)
+                            </div>
+
+                            <div id="weekly-options" class="recurrence-options">
+                                Chaque <input type="number" id="weekly-interval" value="1" min="1" /> semaine(s)
                                 <div>
-                                  <input type="checkbox" id="monday" value="MO"> Lundi
+                                    <input type="checkbox" id="monday" value="MO"> Lundi
                                     <input type="checkbox" id="tuesday" value="TU"> Mardi
                                     <input type="checkbox" id="wednesday" value="WE"> Mercredi
                                     <input type="checkbox" id="thursday" value="TH"> Jeudi
@@ -354,10 +401,10 @@
                                     <input type="checkbox" id="saturday" value="SA"> Samedi
                                     <input type="checkbox" id="sunday" value="SU"> Dimanche
                                 </div>
-                              </div>
-                          
-                              <div id="monthly-options" class="recurrence-options">
-                                Chaque <input type="number" id="monthly-interval" value="1" min="1"/> mois
+                            </div>
+
+                            <div id="monthly-options" class="recurrence-options">
+                                Chaque <input type="number" id="monthly-interval" value="1" min="1" /> mois
                                 <input type="radio" id="byweekday" name="monthly">
                                 <select id="weekday-in-month">
                                     <option value="0">Chaque</option>
@@ -368,31 +415,32 @@
                                     <option value="-1">dernier</option>
                                 </select>
                                 <select id="weekday">
-                                  <option value="MO">Lundi</option>
-                                  <option value="TU">Mardi</option>
+                                    <option value="MO">Lundi</option>
+                                    <option value="TU">Mardi</option>
                                     <option value="WE">Mercredi</option>
                                     <option value="TH">Jeudi</option>
                                     <option value="FR">Vendredi</option>
                                     <option value="SA">Samedi</option>
                                     <option value="SU">Dimanche</option>
                                 </select>
-                                <input type="radio" id="bymonthday" name="monthly"> Se répète le(s) jour(s) <input type="text" id="monthdays" />
-                              </div>
-                          
-                              <div id="yearly-options" class="recurrence-options">
-                                Chaque <input type="number" id="year-interval" value="1" min="1"/> année(s)
+                                <input type="radio" id="bymonthday" name="monthly"> Se répète le(s) jour(s) <input
+                                    type="text" id="monthdays" />
+                            </div>
+
+                            <div id="yearly-options" class="recurrence-options">
+                                Chaque <input type="number" id="year-interval" value="1" min="1" /> année(s)
                                 <input type="radio" id="byyearweekday" name="yearly">
                                 <select id="weekday-in-year">
                                     <option value="0">chaque</option>
-                                  <option value="1">premier</option>
-                                  <option vlaue="2">deuxième</option>
+                                    <option value="1">premier</option>
+                                    <option vlaue="2">deuxième</option>
                                     <option value="3">troisième</option>
                                     <option value="4">quatrième</option>
                                     <option value="-1">dernier</option>
                                 </select>
                                 <select id="weekday-year">
-                                  <option value="MO">Lundi</option>
-                                  <option value="TU">Mardi</option>
+                                    <option value="MO">Lundi</option>
+                                    <option value="TU">Mardi</option>
                                     <option value="WE">Mercredi</option>
                                     <option value="TH">Jeudi</option>
                                     <option value="FR">Vendredi</option>
@@ -400,7 +448,7 @@
                                     <option value="SU">Dimanche</option>
                                 </select>
                                 de <select id="month-year">
-                                  <option value="1">Janvier</option>
+                                    <option value="1">Janvier</option>
                                     <option value="2">Février</option>
                                     <option value="3">Mars</option>
                                     <option value="4">Avril</option>
@@ -413,13 +461,18 @@
                                     <option value="11">Novembre</option>
                                     <option value="12">Décembre</option>
                                 </select>
-                              </div>
+                            </div>
                         </div>
                     </fieldset>
                 </div>
                 <div>
                     <label for="description">Description:</label>
                     <textarea id="description" name="description"></textarea>
+                </div>
+
+                <div>
+                    <label for="location">Location :</label>
+                    <input type="text" id="location" name="location">
                 </div>
 
                 <div>
@@ -489,7 +542,8 @@
     let divError
     const DOUBLE_CLICK_DELAY = 300;
     let clickTimer = null;
-    
+
+
     document.getElementById('form-calendar-temporary').addEventListener('submit', async (event) => {
         event.preventDefault();
         const formCalendarTemporary = document.getElementById('form-calendar-temporary');
@@ -502,25 +556,26 @@
             },
             body: JSON.stringify({ url: inputCalendarTemporary.value })
         })
-        .then(response => response.json())
-        .then(data => {
-            temporaryCalendar.push(data);
-            temporaryCalendar[0].events.map(event => {
-                console.log(event)
-                fullCalendar.addEvent({
-                title: event.summary,
-                start: event.start,
-                end: event.end,
-                description: event.description,
-                backgroundColor: '#378006',
-                borderColor: '#378006',
-                editable: false})
+            .then(response => response.json())
+            .then(data => {
+                temporaryCalendar.push(data);
+                temporaryCalendar[0].events.map(event => {
+                    console.log(event)
+                    fullCalendar.addEvent({
+                        title: event.summary,
+                        start: event.start,
+                        end: event.end,
+                        description: event.description,
+                        backgroundColor: '#378006',
+                        borderColor: '#378006',
+                        editable: false
+                    })
+                });
+            })
+            .catch(error => {
+                console.error(error);
+                showErrorMessage(error)
             });
-        })
-        .catch(error => {
-            console.error(error);
-            showErrorMessage(error)
-        });
         formCalendarTemporary.reset();
     })
 
@@ -540,9 +595,20 @@
 
         fullCalendar = initializeCalendar(events, userAllCalendars.id);
         divError = document.getElementById('message');
-        document.getElementById('dashboard_link').href = `/users/${user.username}/dashboard`;
-        document.getElementById('createCalendarBtn').addEventListener('click', () => { });
+        document.getElementById('createCalendarBtn').addEventListener('click', () => {
+            window.location.href = `/users/${user.username}/dashboard`;
+        });
         document.getElementById('toggleSidebar').addEventListener('click', toggleSidebar);
+
+        document.getElementById('exportCalendar').addEventListener('click', async () => {
+            try {
+                console.log(document.getElementById('exportCalendarText'))
+                await navigator.clipboard.writeText(document.getElementById('exportCalendarText').innerHTML);
+                console.log('Content copied to clipboard');
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+            }
+        })
 
     });
 
@@ -570,7 +636,7 @@
             const li = document.createElement('li');
             const a = document.createElement('a');
             const img = document.createElement('img');
-            if (calendar.right === 'READ'){
+            if (calendar.right === 'READ') {
                 img.src = '/images/cadenas.png';
                 img.style.width = '20px';
                 img.style.height = '20px';
@@ -617,6 +683,10 @@
     }
 
     const selectUserCalendarInList = () => {
+        if (currentCalendar === undefined) {
+            return;
+        }
+
         document.querySelectorAll('.selected').forEach(element => {
             element.style.backgroundColor = 'initial';
             element.style.color = 'initial';
@@ -629,24 +699,24 @@
     }
 
     const getAllEventsFromCalendars = (calendar) => {
-    let allEvents = [];
+        let allEvents = [];
 
-    // Ajouter les événements du calendrier actuel
-    if (calendar && calendar.events) {
-        allEvents = allEvents.concat(
-            calendar.events.map(event => ({ ...event, calendarColor: calendar.color }))
-        );
-    }
-
-    // Si le calendrier a des enfants, les traiter récursivement
-    if (calendar && calendar.children) {
-        for (const child of calendar.children) {
-            allEvents = allEvents.concat(getAllEventsFromCalendars(child));
+        // Ajouter les événements du calendrier actuel
+        if (calendar && calendar.events) {
+            allEvents = allEvents.concat(
+                calendar.events.map(event => ({ ...event, calendarColor: calendar.color }))
+            );
         }
-    }
 
-    return allEvents;
-};
+        // Si le calendrier a des enfants, les traiter récursivement
+        if (calendar && calendar.children) {
+            for (const child of calendar.children) {
+                allEvents = allEvents.concat(getAllEventsFromCalendars(child));
+            }
+        }
+
+        return allEvents;
+    };
 
     document.getElementById('eventForm').addEventListener('submit', async (data) => {
         data.preventDefault();
@@ -658,11 +728,12 @@
         const endDateInput = document.getElementById('endDate').value;
         const descriptionInput = document.getElementById('description').value;
         const recurrenceType = document.getElementById('recurrence-type').value;
+        const locationInput = document.getElementById('location').value;
 
         const selectElement = document.getElementById('eventCalendarSelection');
         const selectedOptions = Array.from(selectElement.selectedOptions);
         const selectedCalendarIds = selectedOptions.map(option => option.value).filter(value => value !== 'Default');
-        
+
 
         if (new Date(startDateInput) >= new Date(endDateInput)) {
             console.log("La date de début doit être inférieure à la date de fin !");
@@ -679,6 +750,7 @@
             startDate: startDateInput,
             endDate: endDateInput,
             description: descriptionInput,
+            location: locationInput,
             selectedCalendar: selectedCalendarIds,
         };
 
@@ -690,14 +762,14 @@
             body: JSON.stringify(event),
         })
 
-        .then(response => response.json())
-        .then(data => {
-            closeModal();
-        })
-        .catch(error => {
-            console.error(error);
-            showErrorMessage(error)
-        });
+            .then(response => response.json())
+            .then(data => {
+                closeModal();
+            })
+            .catch(error => {
+                console.error(error);
+                showErrorMessage(error)
+            });
     });
 
     document.addEventListener('keydown', (event) => {
@@ -707,29 +779,29 @@
         }
     });
 
-    const populateCalendarDropdown = () =>  {
-    // Effacer les options existantes
-    const selectElement = document.getElementById('eventCalendarSelection');
-    while (selectElement.firstChild) {
-        selectElement.removeChild(selectElement.firstChild);
-    }
+    const populateCalendarDropdown = () => {
+        // Effacer les options existantes
+        const selectElement = document.getElementById('eventCalendarSelection');
+        while (selectElement.firstChild) {
+            selectElement.removeChild(selectElement.firstChild);
+        }
 
-    // Ajouter l'option par défaut
-    let defaultOption = document.createElement('option');
-    defaultOption.value = 'Default';
-    defaultOption.text = 'Default';
-    defaultOption.selected = true;
-    selectElement.appendChild(defaultOption);
+        // Ajouter l'option par défaut
+        let defaultOption = document.createElement('option');
+        defaultOption.value = 'Default';
+        defaultOption.text = 'Default';
+        defaultOption.selected = true;
+        selectElement.appendChild(defaultOption);
 
-    if (currentCalendar && currentCalendar.type === 'SHARED') {
-        currentCalendar.children.forEach(child => {
-            let option = document.createElement('option');
-            option.value = child.id;
-            option.text = child.name;
-            selectElement.appendChild(option);
-        });
+        if (currentCalendar && currentCalendar.type === 'SHARED') {
+            currentCalendar.children.forEach(child => {
+                let option = document.createElement('option');
+                option.value = child.id;
+                option.text = child.name;
+                selectElement.appendChild(option);
+            });
+        }
     }
-}
 
     const changeView = (viewName) => {
         fullCalendar.changeView(viewName);
@@ -860,73 +932,72 @@
             formSettings.link.value = calendar.url;
             formSettings.class.value = calendar.class;
 
-            if (calendar.type === 'SHARED') {
-                currentCalendar.children.forEach(children => {
+
+            currentCalendar.children.forEach(children => {
+                let li = document.createElement('li');
+                li.appendChild(document.createTextNode(children.name));
+                li.setAttribute('calendarId', children.id);
+
+                let supprimerBtn = document.createElement('button');
+                supprimerBtn.type = 'button';
+                supprimerBtn.appendChild(document.createTextNode('Supprimer'));
+                supprimerBtn.onclick = () => {
+                    calendarChildren.splice(calendarChildren.indexOf(children.id), 1);
+                    li.remove();
+
+                    let liToAdd = document.createElement('li');
+                    liToAdd.appendChild(document.createTextNode(children.name));
+                    let ajouterBtn = document.createElement('button');
+                    ajouterBtn.appendChild(document.createTextNode('Ajouter'));
+                    ajouterBtn.type = 'button';
+                    ajouterBtn.onclick = () => {
+                        calendarChildren.push(children.id);
+                        let liSub = document.createElement('li');
+                        liSub.appendChild(document.createTextNode(children.name));
+                        liSub.setAttribute('calendarId', children.id);
+                        liSub.appendChild(supprimerBtn);
+                        document.getElementById('calendarAssociated').appendChild(liSub);
+                        liToAdd.remove();
+                    };
+                    liToAdd.appendChild(ajouterBtn);
+                    calendarAssociated_addNew.appendChild(liToAdd);
+                };
+
+                li.appendChild(supprimerBtn);
+                document.getElementById('calendarAssociated').appendChild(li);
+            });
+
+            allCalendars
+                .filter(calendar => !calendarChildren.includes(calendar.id))
+                .forEach(calendar => {
                     let li = document.createElement('li');
-                    li.appendChild(document.createTextNode(children.name));
-                    li.setAttribute('calendarId', children.id);
-
-                    let supprimerBtn = document.createElement('button');
-                    supprimerBtn.type = 'button';
-                    supprimerBtn.appendChild(document.createTextNode('Supprimer'));
-                    supprimerBtn.onclick = () => {
-                        calendarChildren.splice(calendarChildren.indexOf(children.id), 1);
-                        li.remove();
-
-                        let liToAdd = document.createElement('li');
-                        liToAdd.appendChild(document.createTextNode(children.name));
-                        let ajouterBtn = document.createElement('button');
-                        ajouterBtn.appendChild(document.createTextNode('Ajouter'));
-                        ajouterBtn.type = 'button';
-                        ajouterBtn.onclick = () => {
-                            calendarChildren.push(children.id);
+                    li.appendChild(document.createTextNode(calendar.name));
+                    let ajouterBtn = document.createElement('button');
+                    ajouterBtn.appendChild(document.createTextNode('Ajouter'));
+                    ajouterBtn.type = 'button';
+                    ajouterBtn.onclick = () => {
+                        if (!calendarChildren.includes(calendar.id)) {
+                            calendarChildren.push(calendar.id);
                             let liSub = document.createElement('li');
-                            liSub.appendChild(document.createTextNode(children.name));
-                            liSub.setAttribute('calendarId', children.id);
+                            liSub.appendChild(document.createTextNode(calendar.name));
+                            liSub.setAttribute('calendarId', calendar.id);
+
+                            let supprimerBtn = document.createElement('button');
+                            supprimerBtn.type = 'button';
+                            supprimerBtn.appendChild(document.createTextNode('Supprimer'));
+                            supprimerBtn.onclick = () => {
+                                calendarChildren.splice(calendarChildren.indexOf(calendar.id), 1);
+                                liSub.remove();
+                                calendarAssociated_addNew.appendChild(li);
+                            };
                             liSub.appendChild(supprimerBtn);
                             document.getElementById('calendarAssociated').appendChild(liSub);
-                            liToAdd.remove();
-                        };
-                        liToAdd.appendChild(ajouterBtn);
-                        calendarAssociated_addNew.appendChild(liToAdd);
+                            li.remove();
+                        }
                     };
-
-                    li.appendChild(supprimerBtn);
-                    document.getElementById('calendarAssociated').appendChild(li);
+                    li.appendChild(ajouterBtn);
+                    calendarAssociated_addNew.appendChild(li);
                 });
-
-                allCalendars
-                    .filter(calendar => !calendarChildren.includes(calendar.id))
-                    .forEach(calendar => {
-                        let li = document.createElement('li');
-                        li.appendChild(document.createTextNode(calendar.name));
-                        let ajouterBtn = document.createElement('button');
-                        ajouterBtn.appendChild(document.createTextNode('Ajouter'));
-                        ajouterBtn.type = 'button';
-                        ajouterBtn.onclick = () => {
-                            if (!calendarChildren.includes(calendar.id)) {
-                                calendarChildren.push(calendar.id);
-                                let liSub = document.createElement('li');
-                                liSub.appendChild(document.createTextNode(calendar.name));
-                                liSub.setAttribute('calendarId', calendar.id);
-
-                                let supprimerBtn = document.createElement('button');
-                                supprimerBtn.type = 'button';
-                                supprimerBtn.appendChild(document.createTextNode('Supprimer'));
-                                supprimerBtn.onclick = () => {
-                                    calendarChildren.splice(calendarChildren.indexOf(calendar.id), 1);
-                                    liSub.remove();
-                                    calendarAssociated_addNew.appendChild(li);
-                                };
-                                liSub.appendChild(supprimerBtn);
-                                document.getElementById('calendarAssociated').appendChild(liSub);
-                                li.remove();
-                            }
-                        };
-                        li.appendChild(ajouterBtn);
-                        calendarAssociated_addNew.appendChild(li);
-                    });
-            }
 
         }
         modal.style.display = 'flex';
@@ -993,18 +1064,18 @@
         startDateInput.value = formatDateToDatetimeLocal(eventOrDate.start || new Date(eventOrDate));
         endDateInput.value = formatDateToDatetimeLocal(eventOrDate.end || new Date(eventOrDate));
 
-    
+
         populateCalendarDropdown();
         eventOrDate.extendedProps?.description === undefined ? descriptionInput.placeholder = 'Your description here' : descriptionInput.value = eventOrDate.extendedProps.description;
 
-        
+
         modal.style.display = 'flex';
     };
 
     const closeModal = () => {
         const modal = document.getElementById('eventModal');
         const eventData = document.getElementById('eventForm');
-        
+
         eventData.reset()
         modal.style.display = 'none';
     };
@@ -1030,6 +1101,7 @@
             end: event.end,
             calendarId: event.calendarId,
             description: event.description,
+            location: event.location,
             backgroundColor: event.calendarColor ? event.calendarColor : (currentCalendar?.color ? currentCalendar.color : '#378006'),
             borderColor: event.calendarColor ? event.calendarColor : (currentCalendar?.color ? currentCalendar.color : '#378006')
         }));

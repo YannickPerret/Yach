@@ -205,6 +205,7 @@ class Webserver {
                 eventToPersist.start = new Date(eventData.startDate).toISOString();
                 eventToPersist.end = new Date(eventData.endDate).toISOString();
                 eventToPersist.description = eventData.description || null;
+                eventToPersist.location = eventData.location || null;
                 await eventToPersist.persist();
             } else {
                 eventToPersist = new Event({
@@ -212,6 +213,7 @@ class Webserver {
                     end: new Date(eventData.endDate).toISOString(),
                     summary: eventData.summary,
                     description: eventData.description || '',
+                    location: eventData.location || '',
                     calendarId: calendarId
                 });
                 if (calendar[0].type === 'SHARED' && eventData.selectedCalendar?.length > 0) {
@@ -220,7 +222,7 @@ class Webserver {
                             await childCalendar.addEvent(eventToPersist);
                         }
                         else
-                        console.log("Skipping event addition for non-selected shared calendar");
+                            console.log("Skipping event addition for non-selected shared calendar");
                     }
                 } else {
                     await calendar[0].addEvent(eventToPersist);
@@ -235,9 +237,9 @@ class Webserver {
     }
 
     submitCalendar = async (req, reply) => {
-        const { file: data, body: { calendars: inputCalendarsSelected, calendarUrl: inputCalendarUrl, type: typeCalendarInput, name: nameCalendarInput, class: class_visiblity, username } } = req;
+        const { file: data, body: { calendars: inputCalendarsSelected, calendarUrl: inputCalendarUrl, classification: classification, name: nameCalendarInput, class: class_visiblity, username } } = req;
 
-        const typeCalendar = ["PROFESSIONAL", "PERSONAL", "OTHER"].includes(typeCalendarInput) ? typeCalendarInput : "OTHER";
+        const classificationCalendar = ["PROFESSIONAL", "PERSONAL", "OTHER"].includes(classification) ? classification : "OTHER";
         const classVisibility = ["PUBLIC", "PRIVATE"].includes(class_visiblity) ? class_visiblity : "PUBLIC";
         const nameCalendar = nameCalendarInput || "Yoda Default";
         let outputCalendar;
@@ -254,32 +256,32 @@ class Webserver {
         const selectedCalendars = inputCalendarsSelected && Array.isArray(inputCalendarsSelected) ? inputCalendarsSelected : [];
 
         if (data) {
-            outputCalendar = await this.handleFileUpload(data, typeCalendar, nameCalendar, classVisibility, user);
+            outputCalendar = await this.handleFileUpload(data, classificationCalendar, nameCalendar, classVisibility, user);
             selectedCalendars.push(outputCalendar.id);
         }
 
         if (inputCalendarUrl) {
-            outputCalendar = await this.handleUrlCalendar(inputCalendarUrl, typeCalendar, nameCalendar, classVisibility, user);
+            outputCalendar = await this.handleUrlCalendar(inputCalendarUrl, classificationCalendar, nameCalendar, classVisibility, user);
             selectedCalendars.push(outputCalendar.id);
         }
 
         if (selectedCalendars.length > 1) {
-            outputCalendar = await this.handleMultipleCalendars(selectedCalendars, nameCalendar, classVisibility, user);
+            outputCalendar = await this.handleMultipleCalendars(selectedCalendars, classificationCalendar, nameCalendar, classVisibility, user);
         } else if (!data && !inputCalendarUrl) {
             return reply.status(400).send({ error: 'More than one calendar must be selected' });
         }
 
-        reply.send({ url: `${process.env.ENDPOINT_URL}:${process.env.ENDPOINT_PORT}/api/v1/calendar/${outputCalendar.id}` });
+        reply.status(200).send({ url: `${process.env.ENDPOINT_URL}:${process.env.ENDPOINT_PORT}/api/v1/calendar/${outputCalendar.id}` });
     }
 
     // à déplacer dans la class Calendar
-    async handleFileUpload(data, typeCalendar, nameCalendar, classVisibility, user) {
+    async handleFileUpload(data, classificationCalendar, nameCalendar, classVisibility, user) {
         console.log("File upload request received");
         const filePath = data.path;
 
         const uploadCalendar = new Calendar({
             source: filePath,
-            type: typeCalendar,
+            classification: classificationCalendar,
             name: nameCalendar,
             class: classVisibility,
             right: "WRITE",
@@ -313,10 +315,10 @@ class Webserver {
         return uploadCalendar;
     }
 
-    async handleUrlCalendar(inputCalendarUrl, typeCalendar, nameCalendar, classVisibility, user) {
+    async handleUrlCalendar(inputCalendarUrl, classificationCalendar, nameCalendar, classVisibility, user) {
         const urlCalendar = new Calendar({
             source: inputCalendarUrl,
-            type: typeCalendar,
+            classification: classificationCalendar,
             name: nameCalendar,
             url: inputCalendarUrl,
             class: classVisibility,
@@ -337,12 +339,13 @@ class Webserver {
         return urlCalendar;
     }
 
-    async handleMultipleCalendars(selectedCalendars, nameCalendar, classVisibility, user) {
+    async handleMultipleCalendars(selectedCalendars, classificationCalendar, nameCalendar, classVisibility, user) {
         let updateParentCalendar = false;
 
         const ParentCalendar = new Calendar({
             name: nameCalendar,
             type: "SHARED",
+            classification: classificationCalendar,
             class: classVisibility,
             users: [user]
         });
@@ -434,6 +437,7 @@ class Webserver {
     async getUserCalendars(req, reply) {
         let username = req.params.id;
         let user = await User.getByUsername(username);
+
         if (!user) {
             return reply.status(404).send({ error: 'User not found' });
         }
@@ -457,7 +461,7 @@ class Webserver {
             return reply.status(200).view('calendar.ejs', {
                 title: 'Calendar Page',
                 calendars: [],
-                user: [],
+                user: []
             });
         }
 
@@ -561,15 +565,20 @@ class Webserver {
             calendar.url = calendarUpdated.url || calendar.url;
             calendar.syncExpressionCron = calendarUpdated.syncExpressionCron != "0" ? calendarUpdated.syncExpressionCron : calendar.syncExpressionCron;
 
+            await calendar.updateChildrenCalendars(calendarUpdated);
+            if (calendar.children.length > 0) {
+                calendar.type = "SHARED";
+            }
+            else {
+                calendar.type = "BASIC";
+            }
+
+            // added task to scheduler cron
             if (calendar.url != '' && Task.validate(calendar.syncExpressionCron) === false) {
                 calendar.syncExpressionCron = "0 0 * * *";
             }
             else {
                 calendar.updateTaskScheduler(calendarUpdated);
-            }
-
-            if (calendar.type === "SHARED") {
-                await calendar.updateChildrenCalendars(calendarUpdated);
             }
 
             await calendar.persist();
@@ -585,19 +594,25 @@ class Webserver {
     async createUserCalendar(req, reply) {
         try {
             const userId = req.params.id;
-            
+
 
             const user = await User.getByUsername(userId);
             if (!user) {
                 return reply.status(404).send({ error: 'User not found' });
             }
 
-            
+            const calendar = new Calendar({
+                name: "Yoda Basic Default"
+            });
+
+            await calendar.persist();
         }
-        catch(error) {
+        catch (error) {
             console.log(error);
             return reply.status(500).send({ error: 'An unexpected error occurred' });
         }
+
+        return reply.status(200).send({ message: 'Calendar created successfully' });
     }
 
     async importUserCalendar(req, reply) {
@@ -626,7 +641,7 @@ class Webserver {
 
         await uploadCalendar.parseEvents();
         await calendar[0].mergeEventsCalendar(uploadCalendar.events);
-        
+
 
         fs.unlink(filePath, (err) => {
             if (err) {

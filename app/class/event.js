@@ -121,7 +121,7 @@ class Event {
       transp: this.transp || "OPAQUE",
       drStamp: "ffwsdfsfd",
       categories: "test",
-      location: "test",
+      location: this.location,
       geo: "test",
       url: "test",
       rRule: "test",
