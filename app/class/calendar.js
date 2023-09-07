@@ -190,7 +190,7 @@ class Calendar {
      * @returns {Promise<void>}
      */
     async persist() {
-        await Database.getInstance().calendar.upsert({
+        await Database.getInstance().Calendar.upsert({
             where: {
                 id: this.id
             },
@@ -220,6 +220,7 @@ class Calendar {
         for (let user of this.users) {
             await this.#associateUserWithCalendar(user.id);
         }
+        console.log("Users associated with calendar with id:", this.id);
     }
 
     /**
