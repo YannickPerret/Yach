@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+    <script src="/libs/recurrences.js" defer></script>
 
     <style>
         .container {
@@ -270,31 +271,32 @@
         }
 
         /* Tooltip container */
-.tooltip {
-  position: relative;
-  display: inline-block;
-  border-bottom: 1px dotted black; /* If you want dots under the hoverable text */
-}
+        .tooltip {
+            position: relative;
+            display: inline-block;
+            border-bottom: 1px dotted black;
+            /* If you want dots under the hoverable text */
+        }
 
-/* Tooltip text */
-.tooltip .tooltiptext {
-  visibility: hidden;
-  width: 120px;
-  background-color: black;
-  color: #fff;
-  text-align: center;
-  padding: 5px 0;
-  border-radius: 6px;
- 
-  /* Position the tooltip text - see examples below! */
-  position: absolute;
-  z-index: 1;
-}
+        /* Tooltip text */
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 120px;
+            background-color: black;
+            color: #fff;
+            text-align: center;
+            padding: 5px 0;
+            border-radius: 6px;
 
-/* Show the tooltip text when you mouse over the tooltip container */
-.tooltip:hover .tooltiptext {
-  visibility: visible;
-}
+            /* Position the tooltip text - see examples below! */
+            position: absolute;
+            z-index: 1;
+        }
+
+        /* Show the tooltip text when you mouse over the tooltip container */
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+        }
     </style>
 </head>
 
@@ -305,7 +307,7 @@
                 <button id="toggleSidebar">☰</button>
             </div>
             <div class="sidebar-content">
-                <button id="createCalendarBtn">Create new calendar</button>
+                <button id="createCalendarBtn">Dashboard</button>
                 <div id="miniCalendar"></div>
                 <h3>My Calendars</h3>
                 <ul id="userAllCalendars" class="sidebar-userAllCalendars">
@@ -333,7 +335,7 @@
             <div>
                 <div id="exportCalendar" class="tooltip"><span id="exportCalendarText">copy export calendar</span>
                     <span class="tooltiptext">Click to copy export link</span>
-                  </div>
+                </div>
             </div>
         </div>
     </div>
@@ -385,13 +387,13 @@
                             </div>
 
                             <div id="daily-options" class="recurrence-options">
-                                Chaque <input type="number" id="daily-interval" value="1" min="1" /> jour(s)
-                                <input type="radio" id="everyday" name="daily"> Chaque jour
-                                <input type="radio" id="every-weekday" name="daily"> Chaque jour ouvrable
+                                Chaque <input type="number" id="interval" value="1" min="1" /> jour(s)
+                                <input type="radio" id="everyDay" name="daily"> Chaque jour
+                                <input type="radio" id="everyWeekDay" name="daily"> Chaque jour ouvrable
                             </div>
 
                             <div id="weekly-options" class="recurrence-options">
-                                Chaque <input type="number" id="weekly-interval" value="1" min="1" /> semaine(s)
+                                Chaque <input type="number" id="interval" value="1" min="1" /> semaine(s)
                                 <div>
                                     <input type="checkbox" id="monday" value="MO"> Lundi
                                     <input type="checkbox" id="tuesday" value="TU"> Mardi
@@ -404,7 +406,7 @@
                             </div>
 
                             <div id="monthly-options" class="recurrence-options">
-                                Chaque <input type="number" id="monthly-interval" value="1" min="1" /> mois
+                                Chaque <input type="number" id="interval" value="1" min="1" /> mois
                                 <input type="radio" id="byweekday" name="monthly">
                                 <select id="weekday-in-month">
                                     <option value="0">Chaque</option>
@@ -423,14 +425,17 @@
                                     <option value="SA">Samedi</option>
                                     <option value="SU">Dimanche</option>
                                 </select>
-                                <input type="radio" id="bymonthday" name="monthly"> Se répète le(s) jour(s) <input
-                                    type="text" id="monthdays" />
+                                <input type="radio" id="bymonthday" name="monthly"> Se répète le(s) jour(s) 
+                                <input type="text" id="monthdays" />
+                                jusqu'au
+                                <input type="date" id="monthEndDate" onchange="handleEndDateChange()" />
+
                             </div>
 
                             <div id="yearly-options" class="recurrence-options">
-                                Chaque <input type="number" id="year-interval" value="1" min="1" /> année(s)
-                                <input type="radio" id="byyearweekday" name="yearly">
-                                <select id="weekday-in-year">
+                                Pendant <input type="number" id="interval" value="1" min="1" /> année(s)
+                                <input type="radio" id="byYearWeekDay" name="yearly">
+                                <select id="weekdayInYear">
                                     <option value="0">chaque</option>
                                     <option value="1">premier</option>
                                     <option vlaue="2">deuxième</option>
@@ -438,7 +443,7 @@
                                     <option value="4">quatrième</option>
                                     <option value="-1">dernier</option>
                                 </select>
-                                <select id="weekday-year">
+                                <select id="weekday">
                                     <option value="MO">Lundi</option>
                                     <option value="TU">Mardi</option>
                                     <option value="WE">Mercredi</option>
@@ -447,7 +452,7 @@
                                     <option value="SA">Samedi</option>
                                     <option value="SU">Dimanche</option>
                                 </select>
-                                de <select id="month-year">
+                                de <select id="month">
                                     <option value="1">Janvier</option>
                                     <option value="2">Février</option>
                                     <option value="3">Mars</option>
@@ -461,6 +466,7 @@
                                     <option value="11">Novembre</option>
                                     <option value="12">Décembre</option>
                                 </select>
+
                             </div>
                         </div>
                     </fieldset>
@@ -532,6 +538,7 @@
 
 
 <script>
+    
     let fullCalendar;
     let userCalendar
     let currentCalendar
@@ -595,6 +602,7 @@
 
         fullCalendar = initializeCalendar(events, userAllCalendars.id);
         divError = document.getElementById('message');
+
         document.getElementById('createCalendarBtn').addEventListener('click', () => {
             window.location.href = `/users/${user.username}/dashboard`;
         });
@@ -602,8 +610,7 @@
 
         document.getElementById('exportCalendar').addEventListener('click', async () => {
             try {
-                console.log(document.getElementById('exportCalendarText'))
-                await navigator.clipboard.writeText(document.getElementById('exportCalendarText').innerHTML);
+                await navigator.clipboard.writeText(`http://localhost:3000/calendars/${currentCalendar.id}`);
                 console.log('Content copied to clipboard');
             } catch (err) {
                 console.error('Failed to copy: ', err);
@@ -611,18 +618,6 @@
         })
 
     });
-
-    const handleRecurrenceTypeChange = () => {
-        const selectedType = document.getElementById('recurrence-type').value;
-        const options = document.querySelectorAll('.recurrence-options');
-
-        options.forEach(option => option.style.display = 'none');
-
-        const selectedOptions = document.getElementById(`${selectedType}-options`);
-        if (selectedOptions) {
-            selectedOptions.style.display = 'block';
-        }
-    }
 
     const loadUserCalendarList = () => {
 
@@ -727,13 +722,11 @@
         const startDateInput = document.getElementById('startDate').value;
         const endDateInput = document.getElementById('endDate').value;
         const descriptionInput = document.getElementById('description').value;
-        const recurrenceType = document.getElementById('recurrence-type').value;
         const locationInput = document.getElementById('location').value;
 
         const selectElement = document.getElementById('eventCalendarSelection');
         const selectedOptions = Array.from(selectElement.selectedOptions);
         const selectedCalendarIds = selectedOptions.map(option => option.value).filter(value => value !== 'Default');
-
 
         if (new Date(startDateInput) >= new Date(endDateInput)) {
             console.log("La date de début doit être inférieure à la date de fin !");
@@ -751,6 +744,7 @@
             endDate: endDateInput,
             description: descriptionInput,
             location: locationInput,
+            recurrence: handleRecurrenceOptionsChange(),
             selectedCalendar: selectedCalendarIds,
         };
 
@@ -782,6 +776,7 @@
     const populateCalendarDropdown = () => {
         // Effacer les options existantes
         const selectElement = document.getElementById('eventCalendarSelection');
+
         while (selectElement.firstChild) {
             selectElement.removeChild(selectElement.firstChild);
         }
@@ -789,7 +784,7 @@
         // Ajouter l'option par défaut
         let defaultOption = document.createElement('option');
         defaultOption.value = 'Default';
-        defaultOption.text = 'Default';
+        defaultOption.text = 'all calendars';
         defaultOption.selected = true;
         selectElement.appendChild(defaultOption);
 
@@ -898,15 +893,15 @@
                         method: 'POST',
                         body: formData
                     })
-                        .then(response => response.json())
-                        .then(data => {
-                            showErrorMessage(data.message, 'success');
-                            closeModalSettings();
-                        })
-                        .catch(error => {
-                            console.error(error);
-                            showErrorMessage(error)
-                        });
+                    .then(response => response.json())
+                    .then(data => {
+                        showErrorMessage(data.message, 'success');
+                        closeModalSettings();
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        showErrorMessage(error)
+                    });
                 }
             });
 
@@ -968,7 +963,8 @@
             });
 
             allCalendars
-                .filter(calendar => !calendarChildren.includes(calendar.id))
+                .filter(calendar => calendar.id !== currentCalendar.id && calendar.id != calendarChildren)
+                //.filter(calendar => !calendarChildren.includes(calendar.id))
                 .forEach(calendar => {
                     let li = document.createElement('li');
                     li.appendChild(document.createTextNode(calendar.name));
@@ -1064,8 +1060,8 @@
         startDateInput.value = formatDateToDatetimeLocal(eventOrDate.start || new Date(eventOrDate));
         endDateInput.value = formatDateToDatetimeLocal(eventOrDate.end || new Date(eventOrDate));
 
-
         populateCalendarDropdown();
+
         eventOrDate.extendedProps?.description === undefined ? descriptionInput.placeholder = 'Your description here' : descriptionInput.value = eventOrDate.extendedProps.description;
 
 
@@ -1102,6 +1098,7 @@
             calendarId: event.calendarId,
             description: event.description,
             location: event.location,
+            rRule: event.rRule,
             backgroundColor: event.calendarColor ? event.calendarColor : (currentCalendar?.color ? currentCalendar.color : '#378006'),
             borderColor: event.calendarColor ? event.calendarColor : (currentCalendar?.color ? currentCalendar.color : '#378006')
         }));
