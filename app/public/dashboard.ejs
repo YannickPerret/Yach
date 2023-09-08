@@ -12,6 +12,8 @@
 
   <button type="button" onclick="window.location.href = '/logout'">Logout</button><br>
   <button type="button" onclick="window.location.href = '/users/username/calendars'" id="showMyCalendar">See my calendars</button><br>
+  <button type="button" onclick="createNewCalendar()">Create empty calendar</button> <br>
+
 
 <form method="post" enctype="multipart/form-data">
   <input type="text" name="username" id="username" hidden /> <br>
@@ -33,56 +35,78 @@
     <option value="PRIVATE">Private</option>
   </select><br>
   <label>Calendar name : </label><input type="text" name="name" id="name" /><br><br>
-  <button type="button" onclick="() => console.log('fff')">Create empty calendar</button> <br>
 
   <h2>Select your calendars :</h2>
   <% if (calendars.length === 0) { %>
     <p>Don't have calendars available</p>
   <% } else { %>
-    <h3>Epistec team</h3>
+    <h3>Personnal team</h3>
     <% calendars.forEach(function(calendar) { %>
         <% if (calendar.classification == 'PERSONAL') { %>
           <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
-          <label for="<%= calendar.id %>"><a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a>
-          </label><br>
+          <label for="<%= calendar.id %>">
+            <% if (calendar.type == 'SHARED') { %>
+              <img src="/images/shared.png" alt="shared" width="25" height="25">
+            <% } %>
+            <a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a></label><br>
         <% } %>
-    <% }); %>
-
-    <h3>Epsitec calendar</h3>
-    <% calendars.forEach(function(calendar) { %>
         <% if (calendar.classification == 'PROFESSIONAL') { %>
           <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
-          <label for="<%= calendar.id %>"><a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a>
-          </label><br>
+          <label for="<%= calendar.id %>">
+            <% if (calendar.type == 'SHARED') { %>
+              <img src="/images/shared.png" alt="shared" width="25" height="25" />
+            <% } %>
+            <a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a></label><br>
         <% } %>
-    <% }); %>
-
-
-  <h3>Others calendar</h3>
-    <% calendars.forEach(function(calendar) { %>
         <% if (calendar.classification == 'OTHER') { %>
           <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
-          <label for="<%= calendar.id %>"><a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a>
-          </label><br>
+          <label for="<%= calendar.id %>">
+            <% if (calendar.type == 'SHARED') { %>
+              <img src="/images/shared.png" alt="shared" width="25" height="25" />
+            <% } %>
+            <a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a></label><br>
         <% } %>
     <% }); %>
-    <% } %>
-
-  <h3>Shared Calendars (Only check here)</h3>
-  <% calendars.forEach(function(calendar) { %>
-    <% if (calendar.type == 'SHARED') { %>
-      <input type="checkbox" id="<%= calendar.id %>" name="calendars" value="<%= calendar.id %>">
-      <label for="<%= calendar.id %>"><a class="dynamic-link" href="/users/username/calendars/<%= calendar.id %>"><%= calendar.name %></a> - <a href="/api/v1/calendar/<%= calendar.id %>">ics</a>
-      </label><br>
-    <% } %>
-  <% }); %>
-  <br />
+  <% } %>
   <input type="submit" value="Submit">
 </form>
 
 <script>
 
   let username;
+
+  createNewCalendar = async () => {
+    const url = `/users/${username}/calendars`;
+
+    const options = {
+      method: 'POST',
+    };
+
+    const response = await fetch(url, options)
+    .then(response => response.json())
+    .then(message => {
+      showErrorMessage(message.message, "success");
+    })
+  
+  }
+
+  const showErrorMessage = (message, type = "error") => {
+      let divError = document.getElementById('error');
+
+        setTimeout(() => {
+            divError.textContent = '';
+            divError.style.display = 'none';
+        }, 10000);
+        if (type === "error") {
+            divError.style.background = '#FFCCCC';
+        } else {
+            divError.style.background = "green";
+        }
+        divError.style.display = 'block';
+        divError.textContent = message;
+    };
+
+
   document.addEventListener("DOMContentLoaded", () => {
     if (!localStorage.getItem('token') || !localStorage.getItem('username'))  {
       window.location.href = '/';

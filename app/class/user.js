@@ -18,12 +18,14 @@ class User {
     }
 
     static async getBy(field, value) {
+
         const user = await Database.getInstance().user.findMany({
             where: {
                 [field]: value
             }
         })
-        return new User(user);
+
+        return user.map(user => new User(user));
     }
 
     static async getByUsername(username) {
@@ -105,6 +107,45 @@ class User {
         return calendar !== false;
     }
 
+     // user have access to this calendar
+     async haveAccessToCalendar(calendarId) {
+        try {
+            const calendar = await Database.getInstance().user.findUnique({
+                where: {
+                    id: this.id
+                },
+                include: {
+                    calendarUsersAssociations: {
+                        where: {
+                            calendarId: calendarId
+                        }
+                    }
+                }
+            });
+            return calendar.calendarUsersAssociations.length > 0;
+        } catch (error) {
+            console.error("Erreur lors de la vérification de l'accès au calendrier:", error);
+            return false; 
+        }
+    }
+    
+
+    async hasRightOnCalendar(calendarId, right) {
+        const calendar = await Database.getInstance().user.findUnique({
+            where: {
+                id: this.id
+            },
+            include: {
+                calendarUsersAssociations: {
+                    where: {
+                        calendarId: calendarId
+                    }
+                }
+            }
+        });
+        return calendar.calendarUsersAssociations[0].right === right;
+    }
+    
     /**
      * The function `getCalendars` retrieves the calendars associated with a user from the database and
      * returns them as an array of `Calendar` objects.
@@ -140,6 +181,50 @@ class User {
         return calendars;
         
     }
+
+    async addSubscribeCalendar(calendarId) {
+        const calendar = await Database.getInstance().calendar.findUnique({
+            where: {
+                id: calendarId,
+            }
+        });
+
+        if (!calendar) return false;
+
+        const association = await Database.getInstance().CalendarUserAssociation.create({
+            data: {
+                calendarId: calendarId,
+                userId: this.id,
+            }
+        });
+        return association;
+    }
+
+    async removeSubscribeCalendar(calendarId) {
+        const calendar = await Database.getInstance().CalendarUserAssociation.findUnique({
+            where: {
+                userId_calendarId: {
+                    calendarId: calendarId,
+                    userId: this.id
+                }
+            }
+        });        
+
+        if (!calendar) return false;
+        
+        const association = await Database.getInstance().CalendarUserAssociation.delete({
+            where: {
+                userId_calendarId: {
+                    calendarId: calendarId,
+                    userId: this.id
+                }
+            }
+        });
+        
+
+        return association;
+    }
+    
 
     async fetchCalendarWithEvents(calendar) {
         const events = await Database.getInstance().calendarEventAssociation.findMany({

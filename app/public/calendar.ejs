@@ -315,6 +315,8 @@
             </div>
         </div>
         <div class="calendar-container">
+            <div class="calendar-message" id="message"></div>
+
             <div class="calendar-header">
                 <form method="post" id="form-calendar-temporary">
                     <label>Add temporary calendar</label>
@@ -323,13 +325,16 @@
                     <input type="submit" value="Add">
                 </form>
             </div>
-            <div class="calendar-message" id="message"></div>
             <div id="calendar-nav">
                 <button onclick="changeView('dayGridMonth')">Month</button>
                 <button onclick="changeView('timeGridWeek')">Week</button>
                 <button onclick="changeView('timeGridDay')">Day</button>
             </div>
 
+            <div id="calendar-follow">
+                <button onclick="subscribeCalendar()" id="calendar-follow-button">Follow</button>
+                <button onclick="unsubscribeCalendar()" id="calendar-unfollow-button">Unfollow</button>
+            </div>
             <div id='calendar'></div>
 
             <div>
@@ -631,6 +636,7 @@
             const li = document.createElement('li');
             const a = document.createElement('a');
             const img = document.createElement('img');
+            const imgShared = document.createElement('img');
             if (calendar.right === 'READ') {
                 img.src = '/images/cadenas.png';
                 img.style.width = '20px';
@@ -638,7 +644,14 @@
                 a.appendChild(img);
             }
 
-            a.href = `/users/${user.username}/calendar/${calendar.id}`;
+            if (calendar.type === 'SHARED'){
+                imgShared.src = '/images/shared.png';
+                imgShared.style.width = '20px';
+                imgShared.style.height = '20px';
+                a.appendChild(imgShared);
+            }
+
+            a.href = `/users/${user.username}/calendars/${calendar.id}`;
             li.textContent = calendar.name;
             const btn = document.createElement('button');
             const btn2 = document.createElement('button');
@@ -832,7 +845,8 @@
                 start: info.event.start.toISOString(),
                 end: info.event.end.toISOString(),
                 summary: info.event.title,
-                description: info.event.description
+                description: info.event.description,
+                location: info.event.location
             };
 
             const response = await fetch(`/api/v1/calendar/${info.event.extendedProps.calendarId}`, {
@@ -963,8 +977,7 @@
             });
 
             allCalendars
-                .filter(calendar => calendar.id !== currentCalendar.id && calendar.id != calendarChildren)
-                //.filter(calendar => !calendarChildren.includes(calendar.id))
+                .filter(calendar => calendar.id !== currentCalendar.id && !calendarChildren.includes(calendar.id))
                 .forEach(calendar => {
                     let li = document.createElement('li');
                     li.appendChild(document.createTextNode(calendar.name));
@@ -1053,12 +1066,14 @@
         const descriptionInput = document.getElementById('description');
         const eventForm = document.getElementById('eventForm');
         const eventUserSelection = document.getElementById('eventUserSelection');
+        const eventLocation = document.getElementById('location');
 
         calendarIdInput.value = currentCalendar.id;
         eventIdInput.value = eventOrDate.id || null;
         summaryInput.value = eventOrDate.title || '';
         startDateInput.value = formatDateToDatetimeLocal(eventOrDate.start || new Date(eventOrDate));
         endDateInput.value = formatDateToDatetimeLocal(eventOrDate.end || new Date(eventOrDate));
+        eventLocation.value = eventOrDate.extendedProps?.location || '';
 
         populateCalendarDropdown();
 
@@ -1147,6 +1162,43 @@
         fullCalendar.render();
         return fullCalendar;
     };
+
+    const subscribeCalendar = async () => {
+        await fetch(`/users/${user.username}/calendars/${currentCalendar.id}/subscribe`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ calendarId: currentCalendar.id })
+        })
+        .then(response => response.json())
+        .then(data => {
+            showErrorMessage(data.message, 'success');
+        })
+        .catch(error => {
+            console.error(error);
+            showErrorMessage(error)
+        });
+    }
+
+
+    const unsubscribeCalendar = async () => {
+        const response = await fetch(`/users/${user.username}/calendars/${currentCalendar.id}/unsubscribe`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ calendarId: currentCalendar.id })
+        })
+        .then(response => response.json())
+        .then(data => {
+            showErrorMessage(data.message, 'success');
+        })
+        .catch(error => {
+            console.error(error);
+            showErrorMessage(error)
+        });
+    }
 
     const doesEventOverlap = (startDate, endDate) => {
         const start = startDate;

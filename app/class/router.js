@@ -26,6 +26,7 @@ module.exports = (app, handlers, upload) => {
       next();
   }, { prefix: '/api/v1/' });
 
+  
   app.get('/', handlers.getLogin); //login
   app.get('/users/:id/dashboard', handlers.getDashboard); // Création d'un calendrier
   app.get('/calendars/:id', handlers.getWebCalendarById); // visualisation du calendrier if public
@@ -39,5 +40,7 @@ module.exports = (app, handlers, upload) => {
   app.get('/users/:id/calendars/:calendarId/events', handlers.getUserCalendarEvents); // voir les événements d'un calendrier de l'utilisateur // format liste
   app.get('/users/:id/calendars/:calendarId/events/:eventId', handlers.getUserCalendarEventById); // voir un événement d'un calendrier de l'utilisateur
   app.post('/users/:id/calendars/:calendarId/import', { preHandler: upload.single('file') }, handlers.importUserCalendar); // importer un calendrier pour l'utilisateur
+  app.post('/users/:id/calendars/:calendarId/subscribe', handlers.subscribeUserCalendar); // s'abonner à un calendrier
+  app.post('/users/:id/calendars/:calendarId/unsubscribe', handlers.unsubscribeUserCalendar); // se désabonner à un calendrier
   app.get('/users', handlers.getUsers); // voir les utilisateurs
 };

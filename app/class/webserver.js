@@ -157,6 +157,7 @@ class Webserver {
         console.log("Update calendar request received");
         console.log("Calendar ID:", calendarId);
 
+
         // Get the calendar by its id
         const calendar = await Calendar.getById(calendarId);
 
@@ -167,6 +168,8 @@ class Webserver {
             console.debug("Calendar is read only");
             return reply.status(403).send({ error: 'You don\'t have the right to update this calendar' });
         }
+
+
 
         if (typeof eventData === 'string' && eventData.startsWith("BEGIN:VCALENDAR")) {
             // Handle ICS data  
@@ -182,6 +185,7 @@ class Webserver {
                     eventToPersist.summary = event.getFirstPropertyValue('summary');
                     eventToPersist.start = event.getFirstPropertyValue('dtstart');
                     eventToPersist.end = event.getFirstPropertyValue('dtend');
+                    eventToPersist.rRule = event.getFirstPropertyValue('rrule');
                     await eventToPersist.persist();
                 } else {
                     eventToPersist = new Event({
@@ -190,9 +194,9 @@ class Webserver {
                         end: event.getFirstPropertyValue('dtend'),
                         summary: event.getFirstPropertyValue('summary'),
                         transp: event.getFirstPropertyValue('transp'),
+                        rRule: event.getFirstPropertyValue('rrule'),
                         calendarId: calendarId
                     });
-                    //await newEvent.persist();
                     await calendar[0].addEvent(eventToPersist);
                 }
             }
@@ -206,7 +210,11 @@ class Webserver {
                 eventToPersist.end = new Date(eventData.endDate).toISOString();
                 eventToPersist.description = eventData.description || null;
                 eventToPersist.location = eventData.location || null;
+                eventToPersist.transp = eventData.transp || null;
+                eventToPersist.convertToRRule(eventData.recurrence);
+
                 await eventToPersist.persist();
+
             } else {
                 eventToPersist = new Event({
                     start: new Date(eventData.startDate).toISOString(),
@@ -216,6 +224,8 @@ class Webserver {
                     location: eventData.location || '',
                     calendarId: calendarId
                 });
+                eventToPersist.convertToRRule(eventData.recurrence);
+                
                 if (calendar[0].type === 'SHARED' && eventData.selectedCalendar?.length > 0) {
                     for (const childCalendar of calendar[0].children) {
                         if (eventData.selectedCalendar.includes(childCalendar.id)) {
@@ -245,6 +255,7 @@ class Webserver {
         let outputCalendar;
 
         const user = await User.getByUsername(username);
+
         if (!user) {
             return reply.status(400).send({ error: 'You are not authorized' });
         }
@@ -566,12 +577,6 @@ class Webserver {
             calendar.syncExpressionCron = calendarUpdated.syncExpressionCron != "0" ? calendarUpdated.syncExpressionCron : calendar.syncExpressionCron;
 
             await calendar.updateChildrenCalendars(calendarUpdated);
-            if (calendar.children.length > 0) {
-                calendar.type = "SHARED";
-            }
-            else {
-                calendar.type = "BASIC";
-            }
 
             // added task to scheduler cron
             if (calendar.url != '' && Task.validate(calendar.syncExpressionCron) === false) {
@@ -594,15 +599,14 @@ class Webserver {
     async createUserCalendar(req, reply) {
         try {
             const userId = req.params.id;
-
-
             const user = await User.getByUsername(userId);
             if (!user) {
                 return reply.status(404).send({ error: 'User not found' });
             }
 
             const calendar = new Calendar({
-                name: "Yoda Basic Default"
+                name: "Yoda Basic Default",
+                users: [user]
             });
 
             await calendar.persist();
@@ -651,6 +655,66 @@ class Webserver {
 
         console.log("File uploaded successfully")
         reply.status(200).send({ message: 'Calendar imported successfully' });
+    }
+
+    async subscribeUserCalendar(req, reply) {
+        console.log("Subscribe calendar request received")
+        const { id : username, calendarId} = req.params;
+
+        const calendar = await Calendar.getById(calendarId);
+        if (!calendar) {
+            console.error("Calendar not found");
+            return reply.status(404).send({ error: 'Calendar not found' });
+        }
+
+        const user = (await User.getBy('username', username))[0];
+
+        if (!user) {
+            console.error("User not found");
+            return reply.status(404).send({ error: 'User not found' });
+        }
+
+        if (calendar[0].class === "PRIVATE") {
+            console.error("Calendar is private");
+            return reply.status(403).send({ error: 'Calendar is private' });
+        }
+
+        if (await user.haveAccessToCalendar(calendarId)) {
+            console.error("Calendar already subscribed");
+            return reply.status(403).send({ error: 'Calendar already subscribed' });
+        }
+
+        await user.addSubscribeCalendar(calendar[0].id);
+
+        return reply.status(200).send({ message: 'Calendar subscribed successfully' });
+
+    }
+
+    async unsubscribeUserCalendar(req, reply) {
+        console.log("Unsubscribe calendar request received")
+        const { id : username, calendarId} = req.params;
+
+        const calendar = await Calendar.getById(calendarId);
+        if (!calendar) {
+            console.error("Calendar not found");
+            return reply.status(404).send({ error: 'Calendar not found' });
+        }
+
+        const user = (await User.getBy('username', username))[0];
+        if (!user) {
+            console.error("User not found");
+            return reply.status(404).send({ error: 'User not found' });
+        }
+
+        if (await !user.haveAccessToCalendar(calendarId)) {
+            console.error("Calendar not subscribed");
+            return reply.status(403).send({ error: 'Calendar not subscribed' });
+        }
+
+        await user.removeSubscribeCalendar(calendar[0].id)
+
+        return reply.status(200).send({ message: 'Calendar unsubscribed successfully' });
+
     }
 }
 
