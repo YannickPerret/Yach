@@ -517,43 +517,53 @@ class Calendar {
     /* rework delete function */
     async remove() {
         try {
-            // Suppression des associations pour les calendriers partagés
-            if (this.type === 'SHARED') {
-                await Database.getInstance().calendarEventAssociation.deleteMany({
-                    where: { calendarId: this.id }
-                });
-            } else {
-                // Trouver les IDs des événements associés à ce calendrier
-                const eventIds = await Database.getInstance().calendarEventAssociation.findMany({
-                    where: { calendarId: this.id },
-                    select: { eventId: true }
-                }).then(events => events.map(e => e.eventId));
 
-                console.log("Events to delete:", eventIds);
+            // Trouver les IDs des événements associés à ce calendrier
+            const eventIds = await Database.getInstance().CalendarEventAssociation.findMany({
+                where: { calendarId: this.id },
+                select: { eventId: true }
+            }).then(events => events.map(e => e.eventId));
 
-                // Supprimer les associations d'événement avant de supprimer les événements eux-mêmes
-                await Database.getInstance().calendarEventAssociation.deleteMany({
+            if(eventIds.length > 0) {
+                console.log("Number Events to delete:", eventIds.length);
+
+                await Database.getInstance().CalendarEventAssociation.deleteMany({
                     where: { eventId: { in: eventIds } }
                 });
 
                 // Suppression des événements eux-mêmes
-                await Database.getInstance().event.deleteMany({
+                await Database.getInstance().Event.deleteMany({
                     where: { id: { in: eventIds } }
                 });
             }
 
-            // Suppression des associations de calendrier
-            await Database.getInstance().calendarAssociation.deleteMany({
-                where: { OR: [{ parentCalendarId: this.id }, { childCalendarId: this.id }] }
+            // find if calendar have children, then delete associations
+            const childCalendars = await Database.getInstance().CalendarAssociation.findMany({
+                where: { parentCalendarId: this.id }
             });
 
-            // Suppression des associations d'utilisateur de calendrier
-            await Database.getInstance().calendarUserAssociation.deleteMany({
+            if(childCalendars.length > 0) {
+                console.log("Number child calendars association to delete:", childCalendars.length);
+
+                await Database.getInstance().CalendarAssociation.deleteMany({
+                    where: { parentCalendarId: this.id }
+                });
+            }
+
+            // find if calendar have users, then delete associations
+            const calendarUsers = await Database.getInstance().CalendarUserAssociation.findMany({
                 where: { calendarId: this.id }
             });
 
-            // Suppression du calendrier lui-même
-            await Database.getInstance().calendar.delete({
+            if(calendarUsers.length > 0) {
+                console.log("Number calendar users to delete:", calendarUsers.length);
+
+                await Database.getInstance().CalendarUserAssociation.deleteMany({
+                    where: { calendarId: this.id }
+                });
+            }
+
+            await Database.getInstance().Calendar.delete({
                 where: { id: this.id }
             });
 

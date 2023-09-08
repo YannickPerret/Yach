@@ -9,6 +9,11 @@
     <script src="/libs/recurrences.js" defer></script>
 
     <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
         .container {
             display: flex;
             width: 100%;
@@ -20,7 +25,7 @@
         .sidebar {
             position: relative;
             width: 15%;
-            background-color: #f7f7f7;
+            background: linear-gradient(90deg, #5D54A4, #7C78B8);
             padding: 20px;
             border-right: 1px solid #ddd;
             height: 100vh;
@@ -180,8 +185,9 @@
         }
 
         .btnRemoveCalendar {
-            width: 10%;
-            height: 10%;
+            background-color: #e73232;
+            padding: 10px;
+            border-radius: 15px;
         }
 
         /* Pour les champs date */
@@ -430,7 +436,7 @@
                                     <option value="SA">Samedi</option>
                                     <option value="SU">Dimanche</option>
                                 </select>
-                                <input type="radio" id="bymonthday" name="monthly"> Se répète le(s) jour(s) 
+                                <input type="radio" id="bymonthday" name="monthly"> Se répète le(s) jour(s)
                                 <input type="text" id="monthdays" />
                                 jusqu'au
                                 <input type="date" id="monthEndDate" onchange="handleEndDateChange()" />
@@ -537,13 +543,17 @@
                 </div>
                 <input type="submit" value="Submit" />
             </form>
+
+            <div id="divRemoveCalendar">
+                <button id="btnRemoveCalendar" class="btnRemoveCalendar">Remove calendar</button>
+            </div>
         </div>
     </div>
 </body>
 
 
 <script>
-    
+
     let fullCalendar;
     let userCalendar
     let currentCalendar
@@ -644,7 +654,7 @@
                 a.appendChild(img);
             }
 
-            if (calendar.type === 'SHARED'){
+            if (calendar.type === 'SHARED') {
                 imgShared.src = '/images/shared.png';
                 imgShared.style.width = '20px';
                 imgShared.style.height = '20px';
@@ -654,9 +664,7 @@
             a.href = `/users/${user.username}/calendars/${calendar.id}`;
             li.textContent = calendar.name;
             const btn = document.createElement('button');
-            const btn2 = document.createElement('button');
             btn.textContent = " Edit";
-            btn2.textContent = " Delete";
 
             if (calendar.children && calendar.children.length > 0) {
                 li.textContent += " child : ";
@@ -678,13 +686,7 @@
                 openModalSettings(calendar)
             })
 
-            btn2.addEventListener('click', () => {
-                removeCalendar(calendar)
-            })
-
             li.appendChild(btn);
-            li.appendChild(btn2);
-
             li.appendChild(a);
             document.getElementById('userAllCalendars').appendChild(li);
         });
@@ -768,13 +770,15 @@
             },
             body: JSON.stringify(event),
         })
-
             .then(response => response.json())
             .then(data => {
                 closeModal();
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                showErrorMessage(data.message, 'success')
             })
             .catch(error => {
-                console.error(error);
                 showErrorMessage(error)
             });
     });
@@ -888,6 +892,8 @@
         const calendarAssociated = document.getElementById('calendarAssociated');
         const calendarAssociated_addNew = document.getElementById('calendarAssociated__addNew');
         const modalSettingsContent = document.getElementById('settingsModalContent');
+        const btnRemoveCalendar = document.getElementById('btnRemoveCalendar');
+        console.log(btnRemoveCalendar)
 
         if (calendar.type !== 'SHARED') {
             const formImportEvent = document.createElement('form');
@@ -907,15 +913,15 @@
                         method: 'POST',
                         body: formData
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        showErrorMessage(data.message, 'success');
-                        closeModalSettings();
-                    })
-                    .catch(error => {
-                        console.error(error);
-                        showErrorMessage(error)
-                    });
+                        .then(response => response.json())
+                        .then(data => {
+                            showErrorMessage(data.message, 'success');
+                            closeModalSettings();
+                        })
+                        .catch(error => {
+                            console.error(error);
+                            showErrorMessage(error)
+                        });
                 }
             });
 
@@ -1008,6 +1014,16 @@
                     calendarAssociated_addNew.appendChild(li);
                 });
 
+            //remove calendrier
+            btnRemoveCalendar.addEventListener('click', async () => {
+                if (confirm('Do you really want to delete this calendar ?')) {
+                    console.log(calendar)
+                    await removeCalendar(calendar);
+                    closeModalSettings();
+                    window.location.href = `/users/${user.username}/dashboard`;
+                }
+            });
+
         }
         modal.style.display = 'flex';
 
@@ -1044,6 +1060,8 @@
             closeModalSettings();
 
         });
+
+
     };
 
     const removeCalendar = async (calendar) => {
@@ -1171,14 +1189,14 @@
             },
             body: JSON.stringify({ calendarId: currentCalendar.id })
         })
-        .then(response => response.json())
-        .then(data => {
-            showErrorMessage(data.message, 'success');
-        })
-        .catch(error => {
-            console.error(error);
-            showErrorMessage(error)
-        });
+            .then(response => response.json())
+            .then(data => {
+                showErrorMessage(data.message, 'success');
+            })
+            .catch(error => {
+                console.error(error);
+                showErrorMessage(error)
+            });
     }
 
 
@@ -1190,14 +1208,14 @@
             },
             body: JSON.stringify({ calendarId: currentCalendar.id })
         })
-        .then(response => response.json())
-        .then(data => {
-            showErrorMessage(data.message, 'success');
-        })
-        .catch(error => {
-            console.error(error);
-            showErrorMessage(error)
-        });
+            .then(response => response.json())
+            .then(data => {
+                showErrorMessage(data.message, 'success');
+            })
+            .catch(error => {
+                console.error(error);
+                showErrorMessage(error)
+            });
     }
 
     const doesEventOverlap = (startDate, endDate) => {
