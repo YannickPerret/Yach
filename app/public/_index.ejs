@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Yach - <%= title %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="UTF-8">
+  <meta name="theme-color" content="#000000">
+</head>
+
+<body>
+  <div class="container">
+    <div class="screen">
+      <div class="screen__content">
+        <form class="login" id="form-login" enctype="application/x-www-form-urlencoded">
+          <div class="login__field">
+            <i class="login__icon fas fa-user"></i>
+            <input type="text" class="login__input" placeholder="Username">
+          </div>
+          <div class="login__field">
+            <i class="login__icon fas fa-lock"></i>
+            <input type="password" class="login__input" placeholder="Password">
+          </div>
+          <button class="button login__submit">
+            <span class="button__text">Log In Now</span>
+            <i class="button__icon fas fa-chevron-right"></i>
+          </button>
+        </form>
+        <div class="social-login">
+          <h3>log in via</h3>
+          <div class="social-icons">
+            <a href="#" class="social-login__icon fab fa-instagram"></a>
+            <a href="#" class="social-login__icon fab fa-facebook"></a>
+            <a href="#" class="social-login__icon fab fa-twitter"></a>
+          </div>
+        </div>
+      </div>
+      <div class="screen__background">
+        <span class="screen__background__shape screen__background__shape4"></span>
+        <span class="screen__background__shape screen__background__shape3"></span>
+        <span class="screen__background__shape screen__background__shape2"></span>
+        <span class="screen__background__shape screen__background__shape1"></span>
+      </div>
+    </div>
+  </div>
+
+</body>
+
+<script defer>
+  document.addEventListener("DOMContentLoaded", () => {
+    if (localStorage.getItem('token') && localStorage.getItem('username')) {
+      window.location.href = `/users/${localStorage.getItem('username')}/dashboard`;
+    }
+  })
+
+  const formLogin = document.getElementById('form-login');
+  formLogin.addEventListener('submit', (e) => {
+    e.preventDefault();
+    const username = formLogin.querySelector('input[type="text"]').value;
+    const password = formLogin.querySelector('input[type="password"]').value;
+    const data = {
+      username,
+      password
+    };
+    fetch('/api/v1/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('username', data.username);
+        window.location.href = data.redirectUrl;
+        } else {
+          console.error(data.error)
+      }
+    })
+      .catch(err => console.log(err));
+  });
+</script>
+
+</html>

@@ -27,7 +27,6 @@
             width: 15%;
             background: linear-gradient(90deg, #5D54A4, #7C78B8);
             padding: 20px;
-            border-right: 1px solid #ddd;
             height: 100vh;
             overflow-y: auto;
         }
@@ -91,12 +90,34 @@
 
         /* Calendar styles */
 
+        .calendar-header {
+            display : flex;
+            flex-direction: column;
+            border-bottom: 1px solid #ddd;
+            height: 115px;
+            padding : 5px;
+            background: linear-gradient(90deg, #7C78B8, #5D54A4);
+
+        }
+        .calendar-header__form {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            width: 100%;
+        }
+        .calendar-header__form input[type="text"] {
+            width: 40%;
+            height: 35px;
+            border-radius : 10px;
+            padding : 5px;
+        }
+
 
         .calendar-container {
             width: 85%;
             overflow-y: auto;
             height: calc(100vh - 60px);
-            padding-left: 10px;
         }
 
         .calendar-message {
@@ -106,6 +127,11 @@
             height: 25px;
             border-radius: 5px;
         }
+
+        .customCalendars {
+            padding: 20px;
+        }
+
 
         #calendar {
             max-width: 100%;
@@ -324,12 +350,15 @@
             <div class="calendar-message" id="message"></div>
 
             <div class="calendar-header">
-                <form method="post" id="form-calendar-temporary">
+                <form method="post" id="form-calendar-temporary" class="calendar-header__form">
                     <label>Add temporary calendar</label>
-                    <input type="text" id="calendar-temporary" name="calendar-temporary"
-                        placeholder="Url of temporary calendar">
+                    <input type="text" id="calendar-temporary" name="calendar-temporary" placeholder="Url of temporary calendar" class="calendar-header__form-input">
                     <input type="submit" value="Add">
                 </form>
+                <div id="calendar-follow">
+                    <button onclick="subscribeCalendar()" id="calendar-follow-button">Follow</button>
+                    <button onclick="unsubscribeCalendar()" id="calendar-unfollow-button">Unfollow</button>
+                </div>
             </div>
             <div id="calendar-nav">
                 <button onclick="changeView('dayGridMonth')">Month</button>
@@ -337,12 +366,8 @@
                 <button onclick="changeView('timeGridDay')">Day</button>
             </div>
 
-            <div id="calendar-follow">
-                <button onclick="subscribeCalendar()" id="calendar-follow-button">Follow</button>
-                <button onclick="unsubscribeCalendar()" id="calendar-unfollow-button">Unfollow</button>
-            </div>
-            <div id='calendar'></div>
-
+           
+            <div id='calendar' class="customCalendars"></div>
             <div>
                 <div id="exportCalendar" class="tooltip"><span id="exportCalendarText">copy export calendar</span>
                     <span class="tooltiptext">Click to copy export link</span>
@@ -1182,6 +1207,10 @@
     };
 
     const subscribeCalendar = async () => {
+        if (currentCalendar === undefined) {
+            showErrorMessage('No calendar selected');
+            return;
+        }
         await fetch(`/users/${user.username}/calendars/${currentCalendar.id}/subscribe`, {
             method: 'POST',
             headers: {
@@ -1201,6 +1230,10 @@
 
 
     const unsubscribeCalendar = async () => {
+        if (currentCalendar === undefined) {
+            showErrorMessage('No calendar selected');
+            return;
+        }
         const response = await fetch(`/users/${user.username}/calendars/${currentCalendar.id}/unsubscribe`, {
             method: 'POST',
             headers: {

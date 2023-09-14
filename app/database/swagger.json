@@ -1,0 +1,149 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+      "version": "1.0.0",
+      "title": "Calendar API",
+      "description": "API for Calendar Operations"
+    },
+    "servers": [
+      {
+        "url": "/api/v1/"
+      }
+    ],
+    "paths": {
+      "/calendars": {
+        "get": {
+          "summary": "Get all calendars",
+          "operationId": "getAllCalendars",
+          "responses": {
+            "200": {
+              "description": "OK"
+            }
+          }
+        }
+      },
+      "/calendar/{id}": {
+        "get": {
+          "summary": "Get calendar by ID",
+          "operationId": "getCalendarById",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK"
+            }
+          }
+        },
+        "put": {
+          "summary": "Update event in calendar",
+          "operationId": "updateEventCalendar",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK"
+            }
+          }
+        },
+        "delete": {
+          "summary": "Remove calendar",
+          "operationId": "removeCalendar",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK"
+            }
+          }
+        },
+        "PROPFIND": {
+          "summary": "Propfind calendar",
+          "operationId": "propfindCalendar",
+          "parameters": [
+            {
+              "name": "id",
+              "in": "path",
+              "required": true,
+              "schema": {
+                "type": "string"
+              }
+            }
+          ],
+          "responses": {
+            "200": {
+              "description": "OK"
+            }
+          }
+        }
+      },
+      "/calendar": {
+        "post": {
+          "summary": "Submit calendar",
+          "operationId": "submitCalendar",
+          "responses": {
+            "200": {
+              "description": "OK"
+            }
+          }
+        }
+      },
+      "/calendar/temporary": {
+        "post": {
+          "summary": "Get temporary calendar",
+          "operationId": "getTemporaryCalendar",
+          "responses": {
+            "200": {
+              "description": "OK"
+            }
+          }
+        }
+      },
+      "/login": {
+        "post": {
+          "summary": "Login",
+          "operationId": "login",
+          "responses": {
+            "200": {
+              "description": "OK"
+            }
+          }
+        }
+      },
+      "/logout": {
+        "post": {
+          "summary": "Logout",
+          "operationId": "logout",
+          "responses": {
+            "200": {
+              "description": "OK"
+            }
+          }
+        }
+      }
+    }
+  }
+  

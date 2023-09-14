@@ -1,6 +1,24 @@
 module.exports = (app, handlers, upload) => {
   app.register((instance, opts, next) => {
-      instance.get('calendars', handlers.getAllCalendars);
+      instance.get('calendars', {
+        schema: {
+          description: 'Récupérer tous les calendriers',
+          tags: ['Calendrier'],
+          response: {
+            200: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string' },
+                }
+              }
+            }
+          }
+        }
+      }
+      ,handlers.getAllCalendars);
 
       instance.get('calendar/:id', handlers.getCalendarById);
 
@@ -27,7 +45,7 @@ module.exports = (app, handlers, upload) => {
   }, { prefix: '/api/v1/' });
 
   
-  app.get('/', handlers.getLogin); //login
+  //app.get('/', handlers.getLogin); //login
   app.get('/users/:id/dashboard', handlers.getDashboard); // Création d'un calendrier
   app.get('/calendars/:id', handlers.getWebCalendarById); // visualisation du calendrier if public
   app.get('/calendars', handlers.getWebCalendarById); // Visualisation du calendrier vide

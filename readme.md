@@ -26,6 +26,10 @@ step 1 : Fournir deux sources de calendrier et obtenir un lien url d'addition
 
 
 
+Todo : 
+- Ajouter un input web
+- Ajouter une tache cron pour update (update time by calendar)
+
 
 Format de données : 
 Format VCS

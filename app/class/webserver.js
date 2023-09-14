@@ -1,8 +1,7 @@
 // @ts-check
 
 const Fastify = require('fastify');
-const view = require('@fastify/view');
-const ejs = require('ejs');
+const cors = require('@fastify/cors')
 const routes = require('./router');
 const path = require('path');
 const fs = require('fs')
@@ -58,16 +57,14 @@ class Webserver {
         this.start();
     }
 
-    initMiddleware() {
-        this.app.register(require('@fastify/static'), {
-            root: path.join(__dirname, '../public'),
-            prefix: '/',
-        });
+    async initMiddleware() {
+        // cors register with costum origin
+        this.app.register(cors, {
+            origin: '*',
+            methods: ['GET', 'PUT', 'POST', 'DELETE', 'OPTIONS'],
+        })
 
-        this.app.register(view, {
-            engine: { ejs },
-            root: path.join(__dirname, '../public')
-        });
+        //await this.app.register(cors, { origin: true, credentials: true });
 
         this.app.register(upload.contentParser);
 
@@ -211,7 +208,8 @@ class Webserver {
                 eventToPersist.description = eventData.description || null;
                 eventToPersist.location = eventData.location || null;
                 eventToPersist.transp = eventData.transp || null;
-                eventToPersist.convertToRRule(eventData.recurrence);
+                eventToPersist.rRule = eventData.recurrence || null;
+                //eventToPersist.convertToRRule(eventData.recurrence);
 
                 await eventToPersist.persist();
 
@@ -222,9 +220,10 @@ class Webserver {
                     summary: eventData.summary,
                     description: eventData.description || '',
                     location: eventData.location || '',
+                    rRule: eventData.recurrence || null,
                     calendarId: calendarId
                 });
-                eventToPersist.convertToRRule(eventData.recurrence);
+                //eventToPersist.convertToRRule(eventData.recurrence);
                 
                 if (calendar[0].type === 'SHARED' && eventData.selectedCalendar?.length > 0) {
                     for (const childCalendar of calendar[0].children) {
@@ -247,11 +246,12 @@ class Webserver {
     }
 
     submitCalendar = async (req, reply) => {
+        console.log("Submit calendar request received")
         const { file: data, body: { calendars: inputCalendarsSelected, calendarUrl: inputCalendarUrl, classification: classification, name: nameCalendarInput, class: class_visiblity, username } } = req;
 
         const classificationCalendar = ["PROFESSIONAL", "PERSONAL", "OTHER"].includes(classification) ? classification : "OTHER";
         const classVisibility = ["PUBLIC", "PRIVATE"].includes(class_visiblity) ? class_visiblity : "PUBLIC";
-        const nameCalendar = nameCalendarInput || "Yoda Default";
+        const nameCalendar = req.body.nameCalendarInput || "Yoda Default";
         let outputCalendar;
 
         const user = await User.getByUsername(username);
@@ -267,6 +267,7 @@ class Webserver {
         const selectedCalendars = inputCalendarsSelected && Array.isArray(inputCalendarsSelected) ? inputCalendarsSelected : [];
 
         if (data) {
+            console.log(data)
             outputCalendar = await this.handleFileUpload(data, classificationCalendar, nameCalendar, classVisibility, user);
             selectedCalendars.push(outputCalendar.id);
         }
@@ -282,7 +283,7 @@ class Webserver {
             return reply.status(400).send({ error: 'More than one calendar must be selected' });
         }
 
-        reply.status(200).send({ url: `${process.env.ENDPOINT_URL}:${process.env.ENDPOINT_PORT}/api/v1/calendar/${outputCalendar.id}` });
+        reply.status(200).send({calendar: outputCalendar});
     }
 
     // à déplacer dans la class Calendar
@@ -386,7 +387,6 @@ class Webserver {
 
         let calendar = (await Calendar.getById(id))[0];
         if (calendar) {
-            console.log(calendar)
             calendar.remove();
         }
     }
@@ -455,7 +455,7 @@ class Webserver {
 
         let calendars = await user.getCalendarWithEvents();
 
-        return reply.status(200).view('calendar.ejs', {
+        return reply.status(200).send({
             title: 'Calendars Page',
             calendars: calendars,
             user: user,
@@ -597,9 +597,11 @@ class Webserver {
     }
 
     async createUserCalendar(req, reply) {
+        console.log("Create calendar request received")
         try {
             const userId = req.params.id;
             const user = await User.getByUsername(userId);
+
             if (!user) {
                 return reply.status(404).send({ error: 'User not found' });
             }
@@ -608,15 +610,16 @@ class Webserver {
                 name: "Yoda Basic Default",
                 users: [user]
             });
-
             await calendar.persist();
+
+            return reply.status(200).send({ message: 'Calendar created successfully', calendar: calendar });
+
         }
         catch (error) {
             console.log(error);
             return reply.status(500).send({ error: 'An unexpected error occurred' });
         }
 
-        return reply.status(200).send({ message: 'Calendar created successfully' });
     }
 
     async importUserCalendar(req, reply) {

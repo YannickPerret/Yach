@@ -18,6 +18,7 @@ let config = yaml.load(configFile.load());
 let webSever = new Webserver({port: process.env.ENDPOINT_PORT, fileConfig: config});
 
 let taskSchedulerManager = TaskScheduler.getInstance();
+
 (async () => {
     try{
         const calendarsWithUrl = await Calendar.getBy("url", "is not null")

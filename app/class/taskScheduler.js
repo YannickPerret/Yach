@@ -34,7 +34,7 @@ class TaskScheduler {
         } else {
             console.log(`Cron - Calendar ${taskName} not found`);
         }
-    }
+    } 
     removeTask(task) {
         const index = this.tasksQueue.indexOf(task);
         if (index !== -1) {
