@@ -1,0 +1,36 @@
+.modal-imported{
+    font-size: .8em;
+}
+
+.modal-imported-list {
+    display : flex;
+    flex-direction : column;
+    scroll-behavior: auto;
+    max-height: 600px;
+    overflow-y: auto;
+}
+.modal-imported-list::-webkit-scrollbar {
+    width: 10px; /* Largeur du scrollbar */
+}
+
+.modal-imported-list::-webkit-scrollbar-thumb {
+    background-color: #888; /* Couleur du scrollbar */
+    border-radius: 5px; /* Arrondissement des bords */
+}
+
+.modal-imported-list::-webkit-scrollbar-thumb:hover {
+    background-color: #555; /* Couleur du scrollbar au survol */
+}
+
+.modal-imported-list-item {
+    display : flex;
+    flex-direction : row;
+    margin : 10px 0;
+    border : 1px solid #c6c6c6;
+}   
+
+
+.modal-item-existing, .modal-item-imported {
+    flex : 1;
+    margin : 0 10px;
+}
