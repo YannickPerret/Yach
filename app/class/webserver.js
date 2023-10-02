@@ -1,5 +1,3 @@
-// @ts-check
-
 const Fastify = require("fastify");
 const cors = require("@fastify/cors");
 const routes = require("./router");
@@ -104,17 +102,22 @@ class Webserver {
   }
 
   async getCalendarById(req, res) {
-    let id = req.params.id;
+    try {
+      let id = req.params.id;
 
-    let calendar = (await Calendar.getById(id))[0];
+      let calendar = (await Calendar.getById(id))[0];
 
-    let comp = calendar.generateIcal();
+      let comp = calendar.generateIcal();
 
-    // set the correct headers
-    res.type("Content-Type", "text/calendar");
-    res.status(200).send(comp.toString());
+      // set the correct headers
+      res.type("Content-Type", "text/calendar");
+      res.status(200).send(comp.toString());
+    } catch (e) {
+      console.log(e);
+      res.status(500).send();
+    }
   }
-
+  /*
   async propfindCalendar(req, res) {
     let id = req.params.id;
 
@@ -123,7 +126,7 @@ class Webserver {
     // set the correct headers
     res.type("Content-Type", "text/calendar");
     res.status(207).send(); // 207 Multi-Status is commonly used for PROPFIND responses
-  }
+  }*/
 
   getTemporaryCalendar = async (req, reply) => {
     console.log("Temporary calendar request received");
@@ -151,107 +154,132 @@ class Webserver {
   };
 
   /** UPDATE EVENT IN CALENDAR  **/
-  updateEventCalendar = async (req, reply) => {
+  async updateEventCalendar(req, reply) {
     console.log("Update calendar request received");
+    try {
+      let calendarId = req.params.id;
+      let eventData = req.body;
 
-    let calendarId = req.params.id;
-    let eventData = req.body;
-    let eventToPersist;
+      let eventToPersist;
 
-    // Get the calendar by its id
-    const calendar = await Calendar.getById(calendarId);
+      // Get the calendar by its id
+      const calendar = (await Calendar.getById(calendarId))[0];
+      if (!calendar) {
+        return reply.status(404).send({ error: "Calendar not found" });
+      }
+      if (calendar.right === "READ") {
+        console.debug("Calendar is read only");
+        return reply
+          .status(403)
+          .send({ error: "You don't have the right to update this calendar" });
+      }
 
-    if (!calendar[0]) {
-      return reply.status(404).send({ error: "Calendar not found" });
-    }
-    if (calendar[0].right === "READ") {
-      console.debug("Calendar is read only");
-      return reply
-        .status(403)
-        .send({ error: "You don't have the right to update this calendar" });
-    }
+      if (
+        typeof eventData === "string" &&
+        eventData.startsWith("BEGIN:VCALENDAR")
+      ) {
+        // Handle ICS data
+        let jcalData = Ical.parse(eventData);
+        let comp = Ical.component(jcalData);
 
-    if (
-      typeof eventData === "string" &&
-      eventData.startsWith("BEGIN:VCALENDAR")
-    ) {
-      // Handle ICS data
-      let jcalData = Ical.parse(eventData);
-      let comp = Ical.component(jcalData);
+        for (let event of comp.getAllSubcomponents("vevent")) {
+          let uid = event.getFirstPropertyValue("uid");
 
-      for (let event of comp.getAllSubcomponents("vevent")) {
-        let uid = event.getFirstPropertyValue("uid");
+          eventToPersist = await Event.getById(uid);
 
-        eventToPersist = await Event.getById(uid);
+          if (eventToPersist) {
+            eventToPersist.summary = event.getFirstPropertyValue("summary");
+            eventToPersist.start = new Date(
+              event.getFirstPropertyValue("dtstart")
+            ).toISOString();
+            eventToPersist.end = new Date(
+              event.getFirstPropertyValue("dtstart")
+            ).toISOString();
+            eventToPersist.rRule = event.getFirstPropertyValue("rrule");
+            await eventToPersist.persist();
+          } else {
+            eventToPersist = new Event({
+              id: event.getFirstPropertyValue("uid"),
+              start: new Date(
+                event.getFirstPropertyValue("dtstart")
+              ).toISOString(),
+              end: new Date(event.getFirstPropertyValue("dtend")).toISOString(),
+              summary: event.getFirstPropertyValue("summary"),
+              transp: event.getFirstPropertyValue("transp"),
+              rRule: event.getFirstPropertyValue("rrule"),
+            });
+            await calendar.addEventWithoutAssociation(eventToPersist);
+          }
+
+          console.log("eventToPersist", eventToPersist);
+        }
+      } else if (typeof eventData === "object") {
+        eventToPersist = await Event.getById(eventData.eventId);
 
         if (eventToPersist) {
-          eventToPersist.summary = event.getFirstPropertyValue("summary");
-          eventToPersist.start = event.getFirstPropertyValue("dtstart");
-          eventToPersist.end = event.getFirstPropertyValue("dtend");
-          eventToPersist.rRule = event.getFirstPropertyValue("rrule");
+          eventToPersist.summary = eventData.summary;
+          eventToPersist.start = new Date(eventData.startDate).toISOString();
+          eventToPersist.end = new Date(eventData.endDate).toISOString();
+          eventToPersist.description = eventData.description || null;
+          eventToPersist.location = eventData.location || null;
+          eventToPersist.transp = eventData.transp || null;
+          eventToPersist.rRule = eventData.recurrence || null;
+
           await eventToPersist.persist();
         } else {
           eventToPersist = new Event({
-            id: event.getFirstPropertyValue("uid"),
-            start: event.getFirstPropertyValue("dtstart"),
-            end: event.getFirstPropertyValue("dtend"),
-            summary: event.getFirstPropertyValue("summary"),
-            transp: event.getFirstPropertyValue("transp"),
-            rRule: event.getFirstPropertyValue("rrule"),
+            start: new Date(eventData.startDate).toISOString(),
+            end: new Date(eventData.endDate).toISOString(),
+            summary: eventData.summary,
+            description: eventData.description || "",
+            location: eventData.location || "",
+            rRule: eventData.recurrence || null,
             calendarId: calendarId,
           });
-          await calendar[0].addEvent(eventToPersist);
-        }
-      }
-    } else if (typeof eventData === "object") {
-      eventToPersist = await Event.getById(eventData.eventId);
 
-      if (eventToPersist) {
-        eventToPersist.summary = eventData.summary;
-        eventToPersist.start = new Date(eventData.startDate).toISOString();
-        eventToPersist.end = new Date(eventData.endDate).toISOString();
-        eventToPersist.description = eventData.description || null;
-        eventToPersist.location = eventData.location || null;
-        eventToPersist.transp = eventData.transp || null;
-        eventToPersist.rRule = eventData.recurrence || null;
+          if (
+            calendar.type === "SHARED" &&
+            eventData.selectedCalendar?.length > 0
+          ) {
+            console.log(eventData.selectedCalendar[0], calendar.id);
+            // Vérifiez si le calendrier parent est le même que le calendrier sélectionné
+            if (eventData.selectedCalendar[0] == calendar.id) {
+              // Ajoutez l'événement uniquement au calendrier parent
+              console.log("llllll");
+              await calendar.addEventWithoutAssociation(eventToPersist);
+            } else {
+              // Ajoutez l'événement aux calendriers enfants sélectionnés
+              for (const childCalendar of calendar[0].children) {
+                console.log(eventData.selectedCalendar, childCalendar.id);
 
-        await eventToPersist.persist();
-      } else {
-        eventToPersist = new Event({
-          start: new Date(eventData.startDate).toISOString(),
-          end: new Date(eventData.endDate).toISOString(),
-          summary: eventData.summary,
-          description: eventData.description || "",
-          location: eventData.location || "",
-          rRule: eventData.recurrence || null,
-          calendarId: calendarId,
-        });
-
-        if (
-          calendar[0].type === "SHARED" &&
-          eventData.selectedCalendar?.length > 0
-        ) {
-          for (const childCalendar of calendar[0].children) {
-            if (eventData.selectedCalendar.includes(childCalendar.id)) {
-              await childCalendar.addEvent(eventToPersist);
-            } else
-              console.log(
-                "Skipping event addition for non-selected shared calendar"
-              );
+                // Cette condition garantit que l'événement n'est ajouté qu'aux calendriers enfants spécifiquement sélectionnés
+                if (eventData.selectedCalendar.includes(childCalendar.id)) {
+                  await childCalendar.addEvent(eventToPersist);
+                } else {
+                  console.log(
+                    "Skipping event addition for non-selected shared calendar"
+                  );
+                }
+              }
+            }
+          } else {
+            // Si le calendrier n'est pas partagé ou aucun calendrier n'est sélectionné, ajoutez l'événement uniquement au calendrier parent
+            await calendar.addEvent(eventToPersist);
           }
-        } else {
-          await calendar[0].addEvent(eventToPersist);
         }
+      } else {
+        return reply.status(400).send({ error: "Invalid data format" });
       }
-    } else {
-      return reply.status(400).send({ error: "Invalid data format" });
-    }
 
-    return reply.status(200).send({
-      message: "Calendar updated successfully",
-      calendar: calendar[0],
-    });
-  };
+      return reply.status(200).send({
+        message: "Calendar updated successfully",
+        calendar: calendar,
+      });
+    } catch (error) {
+      console.log(error);
+      return reply.status(500).send({ error: "An unexpected error occurred" });
+    }
+  }
 
   submitCalendar = async (req, reply) => {
     console.log("Submit calendar request received");
@@ -453,8 +481,10 @@ class Webserver {
   ////////////
 
   async removeCalendar(req, reply) {
-    const id = req.params.id;
+    console.log("Remove calendar request received");
+    const id = req.params.calendarId;
 
+    console.log(id);
     let calendar = (await Calendar.getById(id))[0];
     if (calendar) {
       calendar.remove();
@@ -628,7 +658,7 @@ class Webserver {
   }
 
   updateUserCalendar = async (req, reply) => {
-    console.log("Update calendar request received");
+    console.log("qUpdate calendar request received");
     try {
       const userId = req.params.id;
       const calendarId = req.params.calendarId;
@@ -751,8 +781,12 @@ class Webserver {
       }
     });
 
-    if (conflicts.length === 0) {
-      await calendar[0].mergeEventsCalendar(uploadCalendar.events);
+    if (conflicts.length == 0) {
+      for (const newEvent of uploadCalendar.events) {
+        console.log("1", newEvent);
+        await calendar.addEventWithoutAssociation(newEvent);
+      }
+      //await calendar[0].mergeEventsCalendar(uploadCalendar.events);
 
       reply
         .status(200)
