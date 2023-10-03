@@ -135,9 +135,9 @@ export default function ModalEvent({
 
   return (
     <Modal onClose={onClose}>
-      <h3 style={{ border: `1px solid ${event?.calendarColor || color}` }}>
+      <h3 style={{ border: `1px solid ${event?.calendarColor}` }}>
         {isEdit ? "Editing event" : "Create new event"} in calendar{" "}
-        {calendar.name}
+        {event?.calendarName}
       </h3>
 
       <form
@@ -367,7 +367,7 @@ export default function ModalEvent({
               <option value="default">Default</option>
               <option value={calendar.id}>{calendar.name}</option>
               {calendar.children
-                .filter((child) => child.right === "READ")
+                .filter((child) => child.right !== "READ")
                 .map((childCalendar) => (
                   <option key={childCalendar.id} value={childCalendar.id}>
                     {childCalendar.name}

@@ -241,17 +241,13 @@ class Webserver {
             calendar.type === "SHARED" &&
             eventData.selectedCalendar?.length > 0
           ) {
-            console.log(eventData.selectedCalendar[0], calendar.id);
             // Vérifiez si le calendrier parent est le même que le calendrier sélectionné
             if (eventData.selectedCalendar[0] == calendar.id) {
               // Ajoutez l'événement uniquement au calendrier parent
-              console.log("llllll");
               await calendar.addEventWithoutAssociation(eventToPersist);
             } else {
               // Ajoutez l'événement aux calendriers enfants sélectionnés
-              for (const childCalendar of calendar[0].children) {
-                console.log(eventData.selectedCalendar, childCalendar.id);
-
+              for (const childCalendar of calendar.children) {
                 // Cette condition garantit que l'événement n'est ajouté qu'aux calendriers enfants spécifiquement sélectionnés
                 if (eventData.selectedCalendar.includes(childCalendar.id)) {
                   await childCalendar.addEvent(eventToPersist);

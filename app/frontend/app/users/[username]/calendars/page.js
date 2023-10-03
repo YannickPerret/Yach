@@ -93,8 +93,15 @@ export default function Calendar() {
     if (isSettingsModalOpen) {
       setSettingsModalOpen(false);
     }
+    const originalEvent = getAllEventsWithChildren(selectedCalendar).find(
+      (e) => e.id === info.event.id
+    );
     setIsEdit(true);
-    setCurrentEvent(info.event);
+    setCurrentEvent({
+      ...info.event,
+      calendarName: originalEvent?.calendarName, // récupérer calendarName de l'événement original
+      calendarColor: originalEvent?.calendarColor,
+    });
     setModalOpen(true);
   };
 
@@ -149,12 +156,12 @@ export default function Calendar() {
 
     // Ajouter les événements du calendrier actuel
     if (calendar?.events) {
-      allEvents = allEvents.concat(
-        calendar.events.map((event) => ({
-          ...event,
-          calendarColor: calendar.color,
-        }))
-      );
+      const eventsWithColorAndName = calendar.events.map((event) => ({
+        ...event,
+        calendarColor: calendar.color,
+        calendarName: calendar.name,
+      }));
+      allEvents = allEvents.concat(eventsWithColorAndName);
     }
 
     // Si le calendrier a des enfants, les traiter récursivement
@@ -163,6 +170,8 @@ export default function Calendar() {
         allEvents = allEvents.concat(getAllEventsWithChildren(child));
       }
     }
+
+    console.log(allEvents);
     return allEvents;
   };
 
@@ -179,7 +188,10 @@ export default function Calendar() {
       backgroundColor: event.calendarColor,
       borderColor: event.calendarColor,
       url: event.url,
+      calendarName: event.calendarName,
+      calendarColor: event.calendarColor,
     }));
+
     calendarComponentRef.current.loadEvents(newEvents);
   };
 
@@ -235,7 +247,6 @@ export default function Calendar() {
               isEdit={isEdit}
               canEditing={canEditing}
               onEventChange={handleRefreshCalendar}
-              color={selectedCalendar.color}
             />
           )}
           {isSettingsModalOpen && (
